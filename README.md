@@ -4,6 +4,10 @@
 
 This project implements the **Ant System algorithm** to approximate solutions for the Traveling Salesman Problem (TSP). The results are compared against the Nearest Neighbor algorithm to evaluate performance and solution quality. The project will use TSPLIB datasets for evaluation and benchmarking.
 
+## Proposal Details
+
+https://docs.google.com/document/d/1twVNaK5_q31XbwoThMIa0YHA--2a9FYVu20sFOQsW4o/edit?usp=sharing
+
 ## Installation
 
 2.  Install [python](https://www.python.org/downloads/)
