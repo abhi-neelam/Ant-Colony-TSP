@@ -14,5 +14,6 @@ pyparsing==3.2.3
 python-dateutil==2.9.0.post0
 six==1.17.0
 tabulate==0.8.10
+tqdm==4.67.1
 tsplib95==0.7.1
 wrapt==1.17.2

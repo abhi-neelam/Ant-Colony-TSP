@@ -1,6 +1,7 @@
 import tsplib95
 import networkx as nx
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 import numpy as np
 
 PROBLEM_SIZE = "MEDIUM" # "SMALL", "MEDIUM", "LARGE"
@@ -121,25 +122,26 @@ def main():
     problem_name, num_nodes, positions, distance_matrix = create_tsp_instance(problem)
     print("2D Coordinates\n",positions,"\n")
     print("Distance Matrix\n",distance_matrix,"\n")
-    # Initial Problem
+    # Print initial Problem
 
     fig = None
 
     if ANIMATE_ROUTE:
         print("Animating route...")
         plt.ion() # enable interactive mode
-        fig, ax = plt.subplots(figsize=(16, 9)) # create plot
+        fig, ax = plt.subplots(figsize=(16, 9)) # create plot for animation
+        fig.canvas.manager.set_window_title(f"Ant Colony TSP") # set window title
 
     G = create_networkx_graph(num_nodes, positions, distance_matrix) # create the precomputed graph object
     best_route = create_random_route(num_nodes) # create a random route at the beginning
 
-    i = 0
-    while i < MAX_ITERATIONS:
+    if not ANIMATE_ROUTE:
+        print("Animation Disabled...")
+
+    for i in tqdm(range(MAX_ITERATIONS), desc=f"Running Ant Colony", unit="iter"):
         if fig is not None:
             if not plt.fignum_exists(fig.number): # exit when window is closed
                 break
-
-        print(f"i = {i}")
 
         route = create_random_route(num_nodes) # random route for now. will change to ant colony later
 
@@ -150,8 +152,6 @@ def main():
             fig.canvas.flush_events()
             plt.pause(0.1) # short pause for viewing the window
 
-        i += 1
-
     if ANIMATE_ROUTE:
         print("Animation finished...\n")
 
@@ -159,6 +159,7 @@ def main():
     plt.ioff() # disable interactive mode
 
     fig, ax = plt.subplots(figsize=(16, 9))
+    fig.canvas.manager.set_window_title(f"Ant Colony TSP") # set window title
     print("Plotting Best Found Route...")
     plot_route(ax, G, best_route, problem_name, num_nodes, distance_matrix) # plot final route solution
     plt.show() # show optimal route
