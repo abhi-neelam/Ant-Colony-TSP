@@ -44,6 +44,9 @@ def create_tsp_instance(problem):
     distance_matrix = np.zeros((num_nodes, num_nodes))
     # create numpy arrays
 
+    if problem.edge_weight_type == 'GEO':
+        print("Geo Coordinates detected. Projecting coordinates to mercator projection...")
+
     for tsp_id, coord in problem.node_coords.items():
         if problem.edge_weight_type == 'GEO': # project coordinates if GEO coords
             latitude = coord[0]
@@ -132,6 +135,8 @@ def plot_route(ax, G, route, problem_name, num_nodes, distance_matrix, current_i
     plt.grid(True, linestyle='-', alpha=0.8) # add grid
 
 def main():
+    np.set_printoptions(threshold=20) # shorten size since positions array is big
+
     problem = load_dataset()
     print_problem(problem)
     problem_name, num_nodes, positions, distance_matrix = create_tsp_instance(problem)
