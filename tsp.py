@@ -7,11 +7,12 @@ import mercantile
 
 PROBLEM_SIZE = "LARGE" # "SMALL", "MEDIUM", "LARGE"
 ANIMATE_ROUTE = True
-MAX_ITERATIONS = 20
+MAX_ITERATIONS = 1000
 # ALGORITHM PARAMETERS
 
+PLOT_EVERY_K_ITERATIONS = 10
 ENABLE_NODE_LABELS = True
-NODE_LABELS_THRESHOLD = 100
+NODE_LABELS_THRESHOLD = 100 
 ALL_EDGES_THRESHOLD = 100
 # DRAWING PARAMETERS
 
@@ -103,7 +104,7 @@ def create_networkX_graph(num_nodes, positions, distance_matrix):
 
     return G
 
-def plot_route(ax, G, route, problem_name, num_nodes, distance_matrix, best_found=False):
+def plot_route(ax, G, route, problem_name, num_nodes, distance_matrix, current_iteration, best_found=False):
     route_edges = get_edge_list(route)
     total_distance = get_route_distance(distance_matrix, route)
 
@@ -124,7 +125,7 @@ def plot_route(ax, G, route, problem_name, num_nodes, distance_matrix, best_foun
 
     ax.tick_params(axis='both', which='major', left=True, bottom=True, labelleft=True, labelbottom=True) # enable tick marks for both axes
 
-    plt.title(f"{best_found*"Best"} Ant Colony TSP Route - {problem_name} ({num_nodes} nodes) \n{MAX_ITERATIONS} iterations\nDistance - {total_distance:.2f}", fontsize=14)
+    plt.title(f"{best_found*"Best"} Ant Colony TSP Route - {problem_name} ({num_nodes} nodes) \n{MAX_ITERATIONS} iterations, Current Iteration - {current_iteration}\nDistance - {total_distance:.2f}", fontsize=14)
 
     plt.xlabel("Relative X Coord", fontsize=12)
     plt.ylabel("Relative Y Coord", fontsize=12) # plot labels
@@ -160,9 +161,9 @@ def main():
 
         route = create_random_route(num_nodes) # random route for now. will change to ant colony later
 
-        if ANIMATE_ROUTE and continue_animation:
+        if ANIMATE_ROUTE and continue_animation and i % PLOT_EVERY_K_ITERATIONS == 0:
             ax.cla()
-            plot_route(ax, G, route, problem_name, num_nodes, distance_matrix) # plot the current route
+            plot_route(ax, G, route, problem_name, num_nodes, distance_matrix, i, best_found=False) # plot the current route
 
             fig.canvas.draw()
             fig.canvas.flush_events()
@@ -177,7 +178,7 @@ def main():
     fig, ax = plt.subplots(figsize=(16, 9))
     fig.canvas.manager.set_window_title(f"Ant Colony TSP") # set window title
     print("Plotting Best Found Route...")
-    plot_route(ax, G, best_route, problem_name, num_nodes, distance_matrix, best_found=True) # plot final route solution
+    plot_route(ax, G, best_route, problem_name, num_nodes, distance_matrix, MAX_ITERATIONS, best_found=True) # plot final route solution
     plt.show() # show optimal route
     print("Exiting program...")
 
