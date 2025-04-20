@@ -8,10 +8,16 @@ import mercantile
 PROBLEM_SIZE = "LARGE" # "SMALL", "MEDIUM", "LARGE"
 ANIMATE_ROUTE = True
 MAX_ITERATIONS = 20
+# ALGORITHM PARAMETERS
 
 ENABLE_NODE_LABELS = True
-ENABLE_ALL_EDGES = False
+NODE_LABELS_THRESHOLD = 100
+ALL_EDGES_THRESHOLD = 100
 # DRAWING PARAMETERS
+
+NODE_LABELS_NODE_SIZE = 200
+NO_NODE_LABELS_NODE_SIZE = 100
+# NODE CIRCLE SIZES
 
 def load_dataset():
     if PROBLEM_SIZE == "SMALL":
@@ -97,20 +103,20 @@ def create_networkX_graph(num_nodes, positions, distance_matrix):
 
     return G
 
-def plot_route(ax, G, route, problem_name, num_nodes, distance_matrix):
-    ax.cla() # Clear the axes for the new drawing
-
+def plot_route(ax, G, route, problem_name, num_nodes, distance_matrix, best_found=False):
     route_edges = get_edge_list(route)
     total_distance = get_route_distance(distance_matrix, route)
-    
-    pos = nx.get_node_attributes(G, 'pos')
 
-    nx.draw_networkx_nodes(G,pos,node_size=200,node_color='lightcoral') # nodes
+    pos = nx.get_node_attributes(G, 'pos') # position dictionary for networkX
 
-    if ENABLE_NODE_LABELS:
+    is_node_labels_enabled =  ENABLE_NODE_LABELS and num_nodes <= NODE_LABELS_THRESHOLD
+    node_size = NODE_LABELS_NODE_SIZE if is_node_labels_enabled else NO_NODE_LABELS_NODE_SIZE
+    nx.draw_networkx_nodes(G,pos,node_size=node_size,node_color='lightcoral') # nodes
+
+    if is_node_labels_enabled:
         nx.draw_networkx_labels(G, pos, font_size=8, font_weight='bold') # node labels
 
-    if ENABLE_ALL_EDGES:
+    if num_nodes <= ALL_EDGES_THRESHOLD:
         nx.draw_networkx_edges(G, pos, edge_color='gray', alpha=0.2) # all edges
 
     nx.draw_networkx_edges(G,pos,edgelist=route_edges,edge_color='black',width=1.5) # route edges
@@ -118,7 +124,8 @@ def plot_route(ax, G, route, problem_name, num_nodes, distance_matrix):
 
     ax.tick_params(axis='both', which='major', left=True, bottom=True, labelleft=True, labelbottom=True) # enable tick marks for both axes
 
-    plt.title(f"Ant Colony TSP Route - {problem_name} ({num_nodes} nodes) \nDistance - {total_distance:.2f}", fontsize=14)
+    plt.title(f"{best_found*"Best"} Ant Colony TSP Route - {problem_name} ({num_nodes} nodes) \n{MAX_ITERATIONS} iterations\nDistance - {total_distance:.2f}", fontsize=14)
+
     plt.xlabel("Relative X Coord", fontsize=12)
     plt.ylabel("Relative Y Coord", fontsize=12) # plot labels
     plt.grid(True, linestyle='-', alpha=0.8) # add grid
@@ -145,14 +152,16 @@ def main():
     if not ANIMATE_ROUTE:
         print("Animation Disabled...")
 
+    continue_animation = True
     for i in tqdm(range(MAX_ITERATIONS), desc=f"Running Ant Colony", unit="iter"):
         if fig is not None:
-            if not plt.fignum_exists(fig.number): # exit when window is closed
-                break
+            if not plt.fignum_exists(fig.number):
+                continue_animation = False # disable animation and continue completing the algorithm
 
         route = create_random_route(num_nodes) # random route for now. will change to ant colony later
 
-        if ANIMATE_ROUTE:
+        if ANIMATE_ROUTE and continue_animation:
+            ax.cla()
             plot_route(ax, G, route, problem_name, num_nodes, distance_matrix) # plot the current route
 
             fig.canvas.draw()
@@ -168,7 +177,7 @@ def main():
     fig, ax = plt.subplots(figsize=(16, 9))
     fig.canvas.manager.set_window_title(f"Ant Colony TSP") # set window title
     print("Plotting Best Found Route...")
-    plot_route(ax, G, best_route, problem_name, num_nodes, distance_matrix) # plot final route solution
+    plot_route(ax, G, best_route, problem_name, num_nodes, distance_matrix, best_found=True) # plot final route solution
     plt.show() # show optimal route
     print("Exiting program...")
 
