@@ -5,8 +5,8 @@ from tqdm import tqdm
 import numpy as np
 import mercantile
 
-PROBLEM_SIZE = "SMALL" # "SMALL", "MEDIUM", "LARGE"
-ANIMATE_ROUTE = True
+PROBLEM_SIZE = "LARGE" # "SMALL", "MEDIUM", "LARGE"
+ANIMATE_ROUTE = False
 MAX_ITERATIONS = 1000
 # ALGORITHM PARAMETERS
 
@@ -194,9 +194,16 @@ def main():
 
     fig, ax = plt.subplots(figsize=(16, 9))
     fig.canvas.manager.set_window_title(f"Ant Colony TSP") # set window title
-    print("Plotting Best Found Route...")
+    
+    np.set_printoptions(threshold=np.inf) # for showing the tour
+
+    print("\nBest Route Distance:", get_route_distance(distance_matrix, best_route))
+    print("Best Route:", best_route)
+
+    print("\nPlotting Best Route...")
     plot_route(ax, G, best_route, problem_name, num_nodes, distance_matrix, MAX_ITERATIONS, best_found=True) # plot final route solution
     plt.show() # show optimal route
+
     print("Exiting program...")
 
 main() # launch the program
