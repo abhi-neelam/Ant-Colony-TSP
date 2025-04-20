@@ -3,14 +3,20 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
 
-PROBLEM_SIZE = "SMALL" # "SMALL", "MEDIUM", "LARGE"
+PROBLEM_SIZE = "MEDIUM" # "SMALL", "MEDIUM", "LARGE"
+ANIMATE_ROUTE = True
+MAX_ITERATIONS = 20
+
+ENABLE_NODE_LABELS = True
+ENABLE_ALL_EDGES = False
+# DRAWING PARAMETERS
 
 def load_dataset():
     if PROBLEM_SIZE == "SMALL":
         return tsplib95.load('datasets/berlin52.tsp')
     elif PROBLEM_SIZE == "MEDIUM":
         return tsplib95.load('datasets/gil262.tsp')
-    return tsplib95.load('datasets/ali535.tsp') 
+    return tsplib95.load('datasets/ali535.tsp')
 
 def print_problem(problem):
     print("\nTSP Problem Details")
@@ -83,25 +89,24 @@ def create_networkx_graph(num_nodes, positions, distance_matrix):
 
     return G
 
-def plot_route(route, problem_name, num_nodes, positions, distance_matrix, enable_node_labels=True, enable_all_edges=True):
+def plot_route(ax, G, route, problem_name, num_nodes, distance_matrix):
+    ax.cla() # Clear the axes for the new drawing
+
     route_edges = get_edge_list(route)
     total_distance = get_route_distance(distance_matrix, route)
-    G = create_networkx_graph(num_nodes, positions, distance_matrix)
+    
     pos = nx.get_node_attributes(G, 'pos')
-
-    fig, ax = plt.subplots(figsize=(16, 9)) # create plot
 
     nx.draw_networkx_nodes(G,pos,node_size=200,node_color='lightcoral') # nodes
 
-    if enable_node_labels:
+    if ENABLE_NODE_LABELS:
         nx.draw_networkx_labels(G, pos, font_size=8, font_weight='bold') # node labels
 
-    if enable_all_edges:
+    if ENABLE_ALL_EDGES:
         nx.draw_networkx_edges(G, pos, edge_color='gray', alpha=0.2) # all edges
-    nx.draw_networkx_edges(G,pos,edgelist=route_edges,edge_color='black',width=1.5) # route edges
 
+    nx.draw_networkx_edges(G,pos,edgelist=route_edges,edge_color='black',width=1.5) # route edges
     nx.draw_networkx_nodes(G, pos, nodelist=[route[0]], node_size=400, node_color='limegreen') # highlight starting node in the route
-    # draw edges and nodes and labels using networkx functions
 
     ax.tick_params(axis='both', which='major', left=True, bottom=True, labelleft=True, labelbottom=True) # enable tick marks for both axes
 
@@ -109,7 +114,6 @@ def plot_route(route, problem_name, num_nodes, positions, distance_matrix, enabl
     plt.xlabel("Relative X Coord", fontsize=12)
     plt.ylabel("Relative Y Coord", fontsize=12) # plot labels
     plt.grid(True, linestyle='-', alpha=0.8) # add grid
-    plt.show()
 
 def main():
     problem = load_dataset()
@@ -117,8 +121,47 @@ def main():
     problem_name, num_nodes, positions, distance_matrix = create_tsp_instance(problem)
     print("2D Coordinates\n",positions,"\n")
     print("Distance Matrix\n",distance_matrix,"\n")
+    # Initial Problem
 
-    route = create_random_route(num_nodes)
-    plot_route(route, problem_name, num_nodes, positions, distance_matrix)
+    fig = None
 
-main()
+    if ANIMATE_ROUTE:
+        print("Animating route...")
+        plt.ion() # enable interactive mode
+        fig, ax = plt.subplots(figsize=(16, 9)) # create plot
+
+    G = create_networkx_graph(num_nodes, positions, distance_matrix) # create the precomputed graph object
+    best_route = create_random_route(num_nodes) # create a random route at the beginning
+
+    i = 0
+    while i < MAX_ITERATIONS:
+        if fig is not None:
+            if not plt.fignum_exists(fig.number): # exit when window is closed
+                break
+
+        print(f"i = {i}")
+
+        route = create_random_route(num_nodes) # random route for now. will change to ant colony later
+
+        if ANIMATE_ROUTE:
+            plot_route(ax, G, route, problem_name, num_nodes, distance_matrix) # plot the current route
+
+            fig.canvas.draw()
+            fig.canvas.flush_events()
+            plt.pause(0.1) # short pause for viewing the window
+
+        i += 1
+
+    if ANIMATE_ROUTE:
+        print("Animation finished...\n")
+
+    plt.close(fig) # close animated figure
+    plt.ioff() # disable interactive mode
+
+    fig, ax = plt.subplots(figsize=(16, 9))
+    print("Plotting Best Found Route...")
+    plot_route(ax, G, best_route, problem_name, num_nodes, distance_matrix) # plot final route solution
+    plt.show() # show optimal route
+    print("Exiting program...")
+
+main() # launch the program
