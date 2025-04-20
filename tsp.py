@@ -5,7 +5,7 @@ from tqdm import tqdm
 import numpy as np
 import mercantile
 
-PROBLEM_SIZE = "LARGE" # "SMALL", "MEDIUM", "LARGE"
+PROBLEM_SIZE = "SMALL" # "SMALL", "MEDIUM", "LARGE"
 ANIMATE_ROUTE = True
 MAX_ITERATIONS = 1000
 # ALGORITHM PARAMETERS
@@ -133,6 +133,18 @@ def plot_route(ax, G, route, problem_name, num_nodes, distance_matrix, current_i
     plt.xlabel("Relative X Coord", fontsize=12)
     plt.ylabel("Relative Y Coord", fontsize=12) # plot labels
     plt.grid(True, linestyle='-', alpha=0.8) # add grid
+
+def initialize_ant_system(num_nodes, distance_matrix, initial_pheromone=1.0):
+    pass
+
+def construct_ant_solution(pheromones, visibility, alpha, beta, start_node=None):
+    pass
+
+def update_pheromones(pheromones, ant_routes, ant_distances, evaporation_rate, deposit_factor):
+    pass
+
+def construct_nearest_neighbor_solution(num_nodes, distance_matrix, start_node=0):
+    pass
 
 def main():
     np.set_printoptions(threshold=20) # shorten size since positions array is big
