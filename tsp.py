@@ -3,8 +3,9 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import numpy as np
+import mercantile
 
-PROBLEM_SIZE = "MEDIUM" # "SMALL", "MEDIUM", "LARGE"
+PROBLEM_SIZE = "LARGE" # "SMALL", "MEDIUM", "LARGE"
 ANIMATE_ROUTE = True
 MAX_ITERATIONS = 20
 
@@ -37,6 +38,12 @@ def create_tsp_instance(problem):
     # create numpy arrays
 
     for tsp_id, coord in problem.node_coords.items():
+        if problem.edge_weight_type == 'GEO': # project coordinates if GEO coords
+            latitude = coord[0]
+            longitude = coord[1]
+
+            coord[0], coord[1] = mercantile.xy(longitude, latitude) # project lat long coords to 2d coordinates using web mercator projection
+
         positions[tsp_id - 1, 0] = coord[0]
         positions[tsp_id - 1, 1] = coord[1]
         # extract out positions to 2d numpy array
@@ -76,7 +83,7 @@ def get_route_distance(distance_matrix, route):
 def create_random_route(num_nodes):
     return np.random.permutation(num_nodes) # random permutation of the nodes
 
-def create_networkx_graph(num_nodes, positions, distance_matrix):
+def create_networkX_graph(num_nodes, positions, distance_matrix):
     G = nx.Graph() # create the graph object
 
     for i in range(num_nodes):
@@ -132,7 +139,7 @@ def main():
         fig, ax = plt.subplots(figsize=(16, 9)) # create plot for animation
         fig.canvas.manager.set_window_title(f"Ant Colony TSP") # set window title
 
-    G = create_networkx_graph(num_nodes, positions, distance_matrix) # create the precomputed graph object
+    G = create_networkX_graph(num_nodes, positions, distance_matrix) # create the precomputed graph object
     best_route = create_random_route(num_nodes) # create a random route at the beginning
 
     if not ANIMATE_ROUTE:
