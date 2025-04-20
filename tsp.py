@@ -41,10 +41,76 @@ def create_tsp_instance(problem):
 
     return problem_name, num_nodes, positions, distance_matrix
 
+def get_edge_list(route):
+    route_edges = []
+    num_nodes = len(route)
+
+    for i in range(num_nodes):
+        u = route[(i + 0) % num_nodes]
+        v = route[(i + 1) % num_nodes]
+        # handle wrap around by using mod
+
+        route_edges.append((u, v)) # append each edge to the list
+
+    return route_edges
+
+def get_route_distance(distance_matrix, route):
+    total = 0
+    num_nodes = len(route)
+
+    for i in range(num_nodes):
+        u = route[(i + 0) % num_nodes]
+        v = route[(i + 1) % num_nodes]
+        # handle wrap around by using mod
+
+        total += distance_matrix[u, v] # add each edge weight to the total route cost
+    return total
+
+def create_random_route(num_nodes):
+    return np.random.permutation(num_nodes) # random permutation of the nodes
+
+def create_networkx_graph(num_nodes, positions, distance_matrix):
+    G = nx.Graph() # create the graph object
+
+    for i in range(num_nodes):
+        G.add_node(i, pos=tuple(positions[i])) # add each position of the node to the graph
+
+    for i in range(0, num_nodes):
+        for j in range(0, num_nodes):
+            if i == j:
+                continue # skip same node
+            G.add_edge(i, j, weight=distance_matrix[i, j]) # add each edge between all pairs of nodes
+
+    return G
+
+def plot_route(route, problem_name, num_nodes, positions, distance_matrix):
+    route_edges = get_edge_list(route)
+    total_distance = get_route_distance(distance_matrix, route)
+    G = create_networkx_graph(num_nodes, positions, distance_matrix)
+    pos = nx.get_node_attributes(G, 'pos')
+
+    fig, ax = plt.subplots(figsize=(14, 7)) # create plot
+
+    nx.draw_networkx_nodes(G,pos,node_size=200,node_color='lightcoral') # nodes
+    nx.draw_networkx_edges(G, pos, edge_color='gray', alpha=0.2) # all edges
+    nx.draw_networkx_edges(G,pos,edgelist=route_edges,edge_color='black',width=1.5) # route edges
+    nx.draw_networkx_labels(G, pos, font_size=8, font_weight='bold') # node labels
+    # draw edges and nodes and labels using networkx functions
+
+    plt.title(f"Ant Colony TSP Route - {problem_name} ({num_nodes} nodes) \nDistance - {total_distance:.2f}", fontsize=14)
+    plt.xlabel("Relative X Coord")
+    plt.ylabel("Relative Y Coord") # plot labels
+    plt.grid(True, linestyle='-', alpha=0.8) # add grid
+    plt.show()
+
 def main():
     problem = load_dataset()
     print_problem(problem)
-    instance = create_tsp_instance(problem)
-    print(instance)
-    
+    problem_name, num_nodes, positions, distance_matrix = create_tsp_instance(problem)
+    print("2D Coordinates\n",positions,"\n")
+    print("Distance Matrix\n",distance_matrix,"\n")
+
+    route = create_random_route(num_nodes)
+    plot_route(route, problem_name, num_nodes, positions, distance_matrix)
+
 main()
