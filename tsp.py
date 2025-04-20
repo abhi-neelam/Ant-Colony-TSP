@@ -83,23 +83,31 @@ def create_networkx_graph(num_nodes, positions, distance_matrix):
 
     return G
 
-def plot_route(route, problem_name, num_nodes, positions, distance_matrix):
+def plot_route(route, problem_name, num_nodes, positions, distance_matrix, enable_node_labels=True, enable_all_edges=True):
     route_edges = get_edge_list(route)
     total_distance = get_route_distance(distance_matrix, route)
     G = create_networkx_graph(num_nodes, positions, distance_matrix)
     pos = nx.get_node_attributes(G, 'pos')
 
-    fig, ax = plt.subplots(figsize=(14, 7)) # create plot
+    fig, ax = plt.subplots(figsize=(16, 9)) # create plot
 
     nx.draw_networkx_nodes(G,pos,node_size=200,node_color='lightcoral') # nodes
-    nx.draw_networkx_edges(G, pos, edge_color='gray', alpha=0.2) # all edges
+
+    if enable_node_labels:
+        nx.draw_networkx_labels(G, pos, font_size=8, font_weight='bold') # node labels
+
+    if enable_all_edges:
+        nx.draw_networkx_edges(G, pos, edge_color='gray', alpha=0.2) # all edges
     nx.draw_networkx_edges(G,pos,edgelist=route_edges,edge_color='black',width=1.5) # route edges
-    nx.draw_networkx_labels(G, pos, font_size=8, font_weight='bold') # node labels
+
+    nx.draw_networkx_nodes(G, pos, nodelist=[route[0]], node_size=400, node_color='limegreen') # highlight starting node in the route
     # draw edges and nodes and labels using networkx functions
 
+    ax.tick_params(axis='both', which='major', left=True, bottom=True, labelleft=True, labelbottom=True) # enable tick marks for both axes
+
     plt.title(f"Ant Colony TSP Route - {problem_name} ({num_nodes} nodes) \nDistance - {total_distance:.2f}", fontsize=14)
-    plt.xlabel("Relative X Coord")
-    plt.ylabel("Relative Y Coord") # plot labels
+    plt.xlabel("Relative X Coord", fontsize=12)
+    plt.ylabel("Relative Y Coord", fontsize=12) # plot labels
     plt.grid(True, linestyle='-', alpha=0.8) # add grid
     plt.show()
 
