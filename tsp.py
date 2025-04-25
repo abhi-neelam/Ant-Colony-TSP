@@ -80,16 +80,10 @@ def get_edge_list(route):
     return route_edges
 
 def get_route_distance(distance_matrix, route):
-    total = 0
-    num_nodes = len(route)
-
-    for i in range(num_nodes):
-        u = route[(i + 0) % num_nodes]
-        v = route[(i + 1) % num_nodes]
-        # handle wrap around by using mod
-
-        total += distance_matrix[u, v] # add each edge weight to the total route cost
-    return total
+    edge_list = get_edge_list(route)
+    edge_distances = distance_matrix[edge_list[:,0], edge_list[:,1]] # get the distances for each edge in the route
+    total_distance = np.sum(edge_distances) # sum to get total distance
+    return total_distance
 
 def create_random_route(num_nodes):
     return np.random.permutation(num_nodes) # random permutation of the nodes
