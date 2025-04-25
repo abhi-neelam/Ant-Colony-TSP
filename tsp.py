@@ -116,10 +116,8 @@ def create_networkX_graph(num_nodes, positions, distance_matrix):
 
     return G
 
-def plot_route(ax, G, route, problem_name, num_nodes, distance_matrix, current_iteration, best_found=False):
+def plot_route(ax, G, route, total_distance, problem_name, num_nodes, distance_matrix, current_iteration, best_found=False):
     route_edges = get_edge_list(route)
-    total_distance = get_route_distance(distance_matrix, route)
-
     pos = nx.get_node_attributes(G, 'pos') # position dictionary for networkX
 
     is_node_labels_enabled =  ENABLE_NODE_LABELS and num_nodes <= NODE_LABELS_THRESHOLD
@@ -148,14 +146,9 @@ def get_desirability_matrix(distance_matrix):
     np.fill_diagonal(desirability_matrix, 0) # set diagonal to 0 since we can't go to the same node as we started from
     return desirability_matrix
 
-def construct_ant_solution(pheromone_matrix, distance_matrix):
-    num_nodes = pheromone_matrix.shape[0]
-    desirability_matrix = get_desirability_matrix(distance_matrix)
-
-    distance_influenced_matrix = desirability_matrix ** DISTANCE_INFLUENCE
-    pheromone_influenced_matrix = pheromone_matrix ** PHEROMONE_INFLUENCE
-    total_influence_matrix = distance_influenced_matrix * pheromone_influenced_matrix # get total influence by multiplying
-
+def construct_ant_solution(total_influence_matrix):
+    num_nodes = total_influence_matrix.shape[0]
+    
     unvisited_nodes = np.ones(num_nodes, dtype=bool)
     route = np.full(num_nodes, -1, dtype=int)
     route[0] = np.random.randint(0, num_nodes) # select a random start node for the ant
@@ -168,44 +161,26 @@ def construct_ant_solution(pheromone_matrix, distance_matrix):
         unvisited_probabilities = unvisited_influences / np.sum(unvisited_influences) # normalize to get probabilities
 
         picked_node = np.random.choice(np.arange(num_nodes), p=unvisited_probabilities) # sample random node based on probability distribution
+        
         route[i+1] = picked_node # add the node to the route
         unvisited_nodes[picked_node] = False # mark the node as picked
 
     return route
 
-def get_pheromone_update(route, route_distance):
-    num_nodes = route.shape[0]
-    pheromone_update = np.zeros((num_nodes, num_nodes))
-    route_edges = get_edge_list(route)
-
-    for edge in route_edges:
-        pheromone_update[edge[1], edge[0]] = pheromone_update[edge[0], edge[1]] = PHEROMONE_DEPOSIT / (route_distance + EPSILON) # update pheromone by inverse distance and default deposit
-
-    return pheromone_update
-
-def update_pheromone_matrix(distance_matrix, pheromone_matrix, ant_routes):
+def update_pheromone_matrix(pheromone_matrix, ant_routes, route_distances):
     pheromone_matrix *= (1 - EVAPORATION_RATE) # pheromone evaporation to soft forget previous routes
 
-    for route in ant_routes:
-        route_distance = get_route_distance(distance_matrix, route)
-        pheromone_update = get_pheromone_update(route, route_distance)
-        pheromone_matrix += pheromone_update # add each ant route contributions to pheromone matrix
+    for route, dist in zip(ant_routes, route_distances):
+        route_edges = get_edge_list(route)
 
-    return pheromone_matrix
+        for edge in route_edges:
+            pheromone_matrix[edge[0], edge[1]] += PHEROMONE_DEPOSIT / (dist + EPSILON)
+            pheromone_matrix[edge[1], edge[0]] += PHEROMONE_DEPOSIT / (dist + EPSILON)
+            # update pheromone by inverse distance and default deposit
 
-def get_best_route(distance_matrix, ant_routes):
-    best_route = ant_routes[0]
-    best_route_distance = get_route_distance(distance_matrix, ant_routes[0]) # get route distance for the 1st route
-
-    for route in ant_routes:
-        route_distance = get_route_distance(distance_matrix, route)
-        if route_distance < best_route_distance:
-            best_route = route
-            best_route_distance = route_distance
-
-        # update best route if the current route is better
-
-    return best_route
+def get_best_route_and_distance(ant_routes, route_distances):
+    idx = np.argmin(route_distances)
+    return ant_routes[idx], route_distances[idx]
 
 def construct_nearest_neighbor_solution(num_nodes, distance_matrix, start_node=0):
     pass
@@ -217,6 +192,10 @@ def main():
     print_problem(problem)
     problem_name, num_nodes, positions, distance_matrix = create_tsp_instance(problem)
     pheromone_matrix = np.full(distance_matrix.shape, INITIAL_PHEROMONE_VALUE) # create pheromone matrix based on initial pheromone value
+    desirability_matrix = get_desirability_matrix(distance_matrix) # create desirability matrix based on distance matrix
+    distance_influenced_matrix = desirability_matrix ** DISTANCE_INFLUENCE # influence for distance matrix
+    ant_routes = np.zeros((NUMBER_OF_ANTS, num_nodes), dtype=int) # ant route matrix
+    route_distances = np.zeros(NUMBER_OF_ANTS) # route distances array
 
     print("2D Coordinates\n",positions,"\n")
     print("Distance Matrix\n",distance_matrix,"\n")
@@ -243,25 +222,24 @@ def main():
             if not plt.fignum_exists(fig.number):
                 continue_animation = False # disable animation and continue completing the algorithm
 
-        ant_routes = np.zeros((NUMBER_OF_ANTS, num_nodes), dtype=int) # ant route matrix
+        pheromone_influenced_matrix = pheromone_matrix ** PHEROMONE_INFLUENCE # influence for pheromone matrix
+        total_influence_matrix = distance_influenced_matrix * pheromone_influenced_matrix # get total influence by multiplying
 
         for j in range(NUMBER_OF_ANTS):
-            ant_routes[j] = construct_ant_solution(pheromone_matrix, distance_matrix) # create random ant solution based on pheromones
-        
-        update_pheromone_matrix(distance_matrix, pheromone_matrix, ant_routes) # update pheromone matrix based on ant routes
+            ant_routes[j] = construct_ant_solution(total_influence_matrix)
+            route_distances[j] = get_route_distance(distance_matrix, ant_routes[j])
 
-        current_iteration_best_route = get_best_route(distance_matrix, ant_routes) # get current iteration best route
-        current_iteration_best_route_distance = get_route_distance(distance_matrix, current_iteration_best_route)
+        update_pheromone_matrix(pheromone_matrix, ant_routes, route_distances)
+        current_iteration_best_route, current_iteration_best_route_distance = get_best_route_and_distance(ant_routes, route_distances) # get the best route and distance for the current iteration
 
         if current_iteration_best_route_distance < best_route_distance:
-            best_route = current_iteration_best_route
+            best_route = current_iteration_best_route.copy() # copy it to avoid reference issues
             best_route_distance = current_iteration_best_route_distance
-
         # update best route if current best iteration route is better
 
         if ANIMATE_ROUTE and continue_animation and i % PLOT_EVERY_K_ITERATIONS == 0:
             ax.cla()
-            plot_route(ax, G, current_iteration_best_route, problem_name, num_nodes, distance_matrix, i, best_found=False) # plot the current route
+            plot_route(ax, G, best_route, best_route_distance, problem_name, num_nodes, distance_matrix, i, best_found=False) # plot the current route
 
             fig.canvas.draw()
             fig.canvas.flush_events()
@@ -275,14 +253,14 @@ def main():
 
     fig, ax = plt.subplots(figsize=(16, 9))
     fig.canvas.manager.set_window_title(f"Ant Colony TSP") # set window title
-    
+
     np.set_printoptions(threshold=np.inf) # for showing the tour
 
-    print("\nBest Route Distance:", get_route_distance(distance_matrix, best_route))
+    print("\nBest Route Distance:", best_route_distance)
     print("Best Route:", best_route)
 
     print("\nPlotting Best Route...")
-    plot_route(ax, G, best_route, problem_name, num_nodes, distance_matrix, MAX_ITERATIONS, best_found=True) # plot final route solution
+    plot_route(ax, G, best_route, best_route_distance, problem_name, num_nodes, distance_matrix, MAX_ITERATIONS, best_found=True) # plot final route solution
     plt.show() # show optimal route
 
     print("Exiting program...")
