@@ -7,7 +7,7 @@ import mercantile
 
 PROBLEM_SIZE = "SMALL" # "SMALL", "MEDIUM", "LARGE"
 MAX_ITERATIONS = 1000 # number of iterations for the algorithm
-NUMBER_OF_ANTS = 20 # number of ants in the colony
+NUMBER_OF_ANTS = 5 # number of ants in the colony
 INITIAL_PHEROMONE_VALUE = 1.0 # initial pheromone value for each edge
 DISTANCE_INFLUENCE = 4.0 # influence of distance on route
 PHEROMONE_INFLUENCE = 1.0 # influence of pheromone on route
@@ -134,7 +134,7 @@ def plot_route(ax, G, route, problem_name, num_nodes, distance_matrix, current_i
 
     ax.tick_params(axis='both', which='major', left=True, bottom=True, labelleft=True, labelbottom=True) # enable tick marks for both axes
 
-    plt.title(f"{best_found*"Best"} Ant Colony TSP Route - {problem_name} ({num_nodes} nodes) \n{MAX_ITERATIONS} iterations, Current Iteration - {current_iteration}\nDistance - {total_distance:.2f}", fontsize=14)
+    plt.title(f"{best_found*"Best"} Ant Colony TSP Route - {problem_name} ({num_nodes} nodes) \n{NUMBER_OF_ANTS} ants, {MAX_ITERATIONS} iterations, Current Iteration - {current_iteration}\nDistance Power - {DISTANCE_INFLUENCE}, Pheromone Power - {PHEROMONE_INFLUENCE}, Evaporation Rate - {EVAPORATION_RATE}\nDistance - {total_distance:.2f}", fontsize=14)
 
     plt.xlabel("Relative X Coord", fontsize=12)
     plt.ylabel("Relative Y Coord", fontsize=12) # plot labels
@@ -173,7 +173,7 @@ def get_pheromone_update(pheromone_matrix, route, route_distance):
     route_edges = get_edge_list(route)
 
     for edge in route_edges:
-        pheromone_update[edge[1], edge[0]] = pheromone_update[edge[0], edge[1]] = PHEROMONE_DEPOSIT / route_distance # update pheromone by inverse distance and deposit
+        pheromone_update[edge[1], edge[0]] = pheromone_update[edge[0], edge[1]] = PHEROMONE_DEPOSIT / route_distance # update pheromone by inverse distance and default deposit
 
     return pheromone_update
 
