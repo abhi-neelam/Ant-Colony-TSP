@@ -4,9 +4,10 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import numpy as np
 import mercantile
+from joblib import Parallel, delayed
 
 PROBLEM_SIZE = "SMALL" # "SMALL", "MEDIUM", "LARGE"
-MAX_ITERATIONS = 10000 # number of iterations for the algorithm
+MAX_ITERATIONS = 1000 # number of iterations for the algorithm
 NUMBER_OF_ANTS = 5 # number of ants in the colony
 INITIAL_PHEROMONE_VALUE = 1.0 # initial pheromone value for each edge
 DISTANCE_INFLUENCE = 4.0 # influence of distance on route
@@ -14,6 +15,9 @@ PHEROMONE_INFLUENCE = 1.0 # influence of pheromone on route
 PHEROMONE_DEPOSIT = 1.0 # pheromone deposit factor
 EVAPORATION_RATE = 0.3 # pheromone evaporation rate
 # ALGORITHM PARAMETERS
+
+PARALLELIZE = False # use parallelization for ant route construction. beneficial if number of ants is large
+# OPTIONAL PARAMETERS
 
 ANIMATE_ROUTE = True
 PLOT_EVERY_K_ITERATIONS = 10
@@ -217,9 +221,14 @@ def main():
         pheromone_influenced_matrix = pheromone_matrix ** PHEROMONE_INFLUENCE # influence for pheromone matrix
         total_influence_matrix = distance_influenced_matrix * pheromone_influenced_matrix # get total influence by multiplying
 
+        if PARALLELIZE:
+            ant_routes = Parallel(n_jobs=-1)(delayed(construct_ant_solution)(total_influence_matrix, identity_route_permutation) for j in range(NUMBER_OF_ANTS)) # parallelize ant route construction with with all cpu cores
+        else:
+            for j in range(NUMBER_OF_ANTS):
+                ant_routes[j] = construct_ant_solution(total_influence_matrix, identity_route_permutation) # manually construct ant routes without parallelization. better for smaller number of ants
+
         for j in range(NUMBER_OF_ANTS):
-            ant_routes[j] = construct_ant_solution(total_influence_matrix, identity_route_permutation)
-            route_distances[j] = get_route_distance(distance_matrix, ant_routes[j])
+            route_distances[j] = get_route_distance(distance_matrix, ant_routes[j]) # don't parallelize this since it's fast enough
 
         update_pheromone_matrix(pheromone_matrix, ant_routes, route_distances)
         current_iteration_best_route, current_iteration_best_route_distance = get_best_route_and_distance(ant_routes, route_distances) # get the best route and distance for the current iteration
