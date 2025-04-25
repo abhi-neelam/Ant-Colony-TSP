@@ -3,17 +3,16 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import numpy as np
-import mercantile
 from joblib import Parallel, delayed
 
 PROBLEM_SIZE = "SMALL" # "SMALL", "MEDIUM", "LARGE"
 MAX_ITERATIONS = 1000 # number of iterations for the algorithm
-NUMBER_OF_ANTS = 5 # number of ants in the colony
+NUMBER_OF_ANTS = 25 # number of ants in the colony
 INITIAL_PHEROMONE_VALUE = 1.0 # initial pheromone value for each edge
-DISTANCE_INFLUENCE = 4.0 # influence of distance on route
+DISTANCE_INFLUENCE = 2.0 # influence of distance on route
 PHEROMONE_INFLUENCE = 1.0 # influence of pheromone on route
 PHEROMONE_DEPOSIT = 1.0 # pheromone deposit factor
-EVAPORATION_RATE = 0.3 # pheromone evaporation rate
+EVAPORATION_RATE = 0.2 # pheromone evaporation rate
 # ALGORITHM PARAMETERS
 
 PARALLELIZE = False # use parallelization for ant route construction. beneficial if number of ants is large otherwise set to False
@@ -35,10 +34,10 @@ EPSILON = 1e-10 # small value to avoid division by zero. useful for many operati
 
 def load_dataset():
     if PROBLEM_SIZE == "SMALL":
-        return tsplib95.load('datasets/berlin52.tsp')
+        return tsplib95.load('datasets/ulysses22.tsp')
     elif PROBLEM_SIZE == "MEDIUM":
-        return tsplib95.load('datasets/gil262.tsp')
-    return tsplib95.load('datasets/ali535.tsp')
+        return tsplib95.load('datasets/berlin52.tsp')
+    return tsplib95.load('datasets/lin105.tsp')
 
 def print_problem(problem):
     print("\nTSP Problem Details")
@@ -57,16 +56,7 @@ def create_tsp_instance(problem):
     distance_matrix = np.zeros((num_nodes, num_nodes))
     # create numpy arrays
 
-    if problem.edge_weight_type == 'GEO':
-        print("Geo Coordinates detected. Projecting coordinates to mercator projection...")
-
     for tsp_id, coord in problem.node_coords.items():
-        if problem.edge_weight_type == 'GEO': # project coordinates if GEO coords
-            latitude = coord[0]
-            longitude = coord[1]
-
-            coord[0], coord[1] = mercantile.xy(longitude, latitude) # project lat long coords to 2d coordinates using web mercator projection
-
         positions[tsp_id - 1, 0] = coord[0]
         positions[tsp_id - 1, 1] = coord[1]
         # extract out positions to 2d numpy array
@@ -77,6 +67,11 @@ def create_tsp_instance(problem):
             # add one since library uses one indexed
 
     return problem_name, num_nodes, positions, distance_matrix
+
+def max_normalize(matrix):
+    max_val = np.max(matrix)
+    normalized_mat = matrix / (max_val + EPSILON) # normalize the matrix by dividing by max value in the matrix
+    return normalized_mat
 
 def get_edge_list(route):
     shifted_route = np.roll(route, -1) # shift the route to get the next node in the route
@@ -186,6 +181,7 @@ def main():
     problem = load_dataset()
     print_problem(problem)
     problem_name, num_nodes, positions, distance_matrix = create_tsp_instance(problem)
+    distance_matrix = max_normalize(distance_matrix) # normalize the distance matrix for stability
     identity_route_permutation = np.arange(num_nodes) # used for caching purposes
     pheromone_matrix = np.full(distance_matrix.shape, INITIAL_PHEROMONE_VALUE) # create pheromone matrix based on initial pheromone value
     desirability_matrix = get_desirability_matrix(distance_matrix) # create desirability matrix based on distance matrix
