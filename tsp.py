@@ -6,18 +6,24 @@ import numpy as np
 import mercantile
 
 PROBLEM_SIZE = "LARGE" # "SMALL", "MEDIUM", "LARGE"
-ANIMATE_ROUTE = False
-MAX_ITERATIONS = 1000
+MAX_ITERATIONS = 1000 # number of iterations for the algorithm
+NUMBER_OF_ANTS = 20 # number of ants in the colony
+INITIAL_PHEROMONE_VALUE = 1.0 # initial pheromone value for each edge
+DISTANCE_INFLUENCE = 4.0 # influence of distance on route
+PHEROMONE_INFLUENCE = 1.0 # influence of pheromone on route
+PHEROMONE_DEPOSIT = 1.0 # pheromone deposit factor
+EVAPORATION_RATE = 0.3 # pheromone evaporation rate
 # ALGORITHM PARAMETERS
 
-PLOT_EVERY_K_ITERATIONS = 10
+ANIMATE_ROUTE = False
+PLOT_EVERY_K_ITERATIONS = 10 # plot every k iterations for animation
 ENABLE_NODE_LABELS = True
-NODE_LABELS_THRESHOLD = 100 
+NODE_LABELS_THRESHOLD = 100
 ALL_EDGES_THRESHOLD = 100
 # DRAWING PARAMETERS
 
-NODE_LABELS_NODE_SIZE = 200
-NO_NODE_LABELS_NODE_SIZE = 100
+NODE_LABELS_NODE_SIZE = 200 # size of node labels on plot
+NO_NODE_LABELS_NODE_SIZE = 100 # size of node labels on plot when nodes are disabled
 # NODE CIRCLE SIZES
 
 def load_dataset():
@@ -134,14 +140,51 @@ def plot_route(ax, G, route, problem_name, num_nodes, distance_matrix, current_i
     plt.ylabel("Relative Y Coord", fontsize=12) # plot labels
     plt.grid(True, linestyle='-', alpha=0.8) # add grid
 
-def initialize_ant_system(num_nodes, distance_matrix, initial_pheromone=1.0):
-    pass
+def get_desirability_matrix(distance_matrix):
+    desirability_matrix = 1 / distance_matrix # invert distance. higher distance means less desirability and vice versa
+    np.fill_diagonal(desirability_matrix, 0) # set diagonal to 0 since we can't go to the same node as we started from
+    return desirability_matrix
 
-def construct_ant_solution(pheromones, visibility, alpha, beta, start_node=None):
-    pass
+def construct_random_ant_solution(num_nodes, pheromone_matrix, distance_matrix):
+    desirability_matrix = get_desirability_matrix(distance_matrix)
 
-def update_pheromones(pheromones, ant_routes, ant_distances, evaporation_rate, deposit_factor):
-    pass
+    distance_influenced_matrix = desirability_matrix ** DISTANCE_INFLUENCE # power based on distance influence
+    pheromone_influenced_matrix = pheromone_matrix ** PHEROMONE_INFLUENCE # power based on pheromone influence
+    total_influence_matrix = distance_influenced_matrix * pheromone_influenced_matrix # get total influence by multiplying
+
+    route = np.zeros(num_nodes, dtype=int)
+    route[0] = np.random.randint(0, num_nodes) # select a random start node for the ant
+
+    for i in range(num_nodes-1):
+        current_node = route[i]
+        unvisited_nodes = np.setdiff1d(np.arange(num_nodes), route, assume_unique=True) # get unvisited nodes by set difference
+        
+        unvisited_influences = total_influence_matrix[current_node, unvisited_nodes] # get influences for unvisited nodes
+        unvisited_probabilities = unvisited_influences / np.sum(unvisited_influences) # normalize to get probabilities
+
+        picked_node = np.random.choice(unvisited_nodes, p=unvisited_probabilities) # sample random node based on probability distribution
+        route[i+1] = picked_node # add the node to the route
+
+    return route
+
+def get_pheromone_update(pheromone_matrix, route, route_distance):
+    pheromone_update = np.zeros(pheromone_matrix.shape)    
+    route_edges = get_edge_list(route)
+
+    for edge in route_edges:
+        pheromone_matrix[edge[0], edge[1]] = PHEROMONE_DEPOSIT / route_distance # update pheromone by inverse distance and deposit
+
+    return pheromone_update
+
+def update_pheromone_matrix(pheromone_matrix, routes):
+    pheromone_matrix *= (1 - EVAPORATION_RATE) # pheromone evaporation
+
+    for route in routes:
+        route_distance = get_route_distance(pheromone_matrix, route)
+        pheromone_update = get_pheromone_update(pheromone_matrix, route, route_distance) # get pheromone update for a single ant route
+        pheromone_matrix += pheromone_update # add each ant route contributions to pheromone matrix
+
+    return pheromone_matrix
 
 def construct_nearest_neighbor_solution(num_nodes, distance_matrix, start_node=0):
     pass
@@ -155,6 +198,8 @@ def main():
     print("2D Coordinates\n",positions,"\n")
     print("Distance Matrix\n",distance_matrix,"\n")
     # Print initial Problem
+
+    pheromone_matrix = np.full(distance_matrix.shape, INITIAL_PHEROMONE_VALUE) # create pheromone matrix
 
     fig = None
 
