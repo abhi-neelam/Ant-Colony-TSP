@@ -5,7 +5,7 @@ from tqdm import tqdm
 import numpy as np
 import mercantile
 
-PROBLEM_SIZE = "LARGE" # "SMALL", "MEDIUM", "LARGE"
+PROBLEM_SIZE = "SMALL" # "SMALL", "MEDIUM", "LARGE"
 MAX_ITERATIONS = 1000 # number of iterations for the algorithm
 NUMBER_OF_ANTS = 20 # number of ants in the colony
 INITIAL_PHEROMONE_VALUE = 1.0 # initial pheromone value for each edge
@@ -15,15 +15,15 @@ PHEROMONE_DEPOSIT = 1.0 # pheromone deposit factor
 EVAPORATION_RATE = 0.3 # pheromone evaporation rate
 # ALGORITHM PARAMETERS
 
-ANIMATE_ROUTE = False
-PLOT_EVERY_K_ITERATIONS = 10 # plot every k iterations for animation
+ANIMATE_ROUTE = True
+PLOT_EVERY_K_ITERATIONS = 10
 ENABLE_NODE_LABELS = True
 NODE_LABELS_THRESHOLD = 100
 ALL_EDGES_THRESHOLD = 100
 # DRAWING PARAMETERS
 
-NODE_LABELS_NODE_SIZE = 200 # size of node labels on plot
-NO_NODE_LABELS_NODE_SIZE = 100 # size of node labels on plot when nodes are disabled
+NODE_LABELS_NODE_SIZE = 200 # size of node labels on plot when labels are enabled
+NO_NODE_LABELS_NODE_SIZE = 100 # size of node labels on plot when labels are disabled
 # NODE CIRCLE SIZES
 
 def load_dataset():
@@ -141,18 +141,19 @@ def plot_route(ax, G, route, problem_name, num_nodes, distance_matrix, current_i
     plt.grid(True, linestyle='-', alpha=0.8) # add grid
 
 def get_desirability_matrix(distance_matrix):
-    desirability_matrix = 1 / distance_matrix # invert distance. higher distance means less desirability and vice versa
+    desirability_matrix = 1.0 / distance_matrix # invert distance. higher distance means less desirability and vice versa
     np.fill_diagonal(desirability_matrix, 0) # set diagonal to 0 since we can't go to the same node as we started from
     return desirability_matrix
 
-def construct_random_ant_solution(num_nodes, pheromone_matrix, distance_matrix):
+def construct_random_ant_solution(pheromone_matrix, distance_matrix):
+    num_nodes = pheromone_matrix.shape[0]
     desirability_matrix = get_desirability_matrix(distance_matrix)
 
     distance_influenced_matrix = desirability_matrix ** DISTANCE_INFLUENCE # power based on distance influence
     pheromone_influenced_matrix = pheromone_matrix ** PHEROMONE_INFLUENCE # power based on pheromone influence
     total_influence_matrix = distance_influenced_matrix * pheromone_influenced_matrix # get total influence by multiplying
 
-    route = np.zeros(num_nodes, dtype=int)
+    route = np.full(num_nodes, -1, dtype=int)
     route[0] = np.random.randint(0, num_nodes) # select a random start node for the ant
 
     for i in range(num_nodes-1):
@@ -172,19 +173,33 @@ def get_pheromone_update(pheromone_matrix, route, route_distance):
     route_edges = get_edge_list(route)
 
     for edge in route_edges:
-        pheromone_matrix[edge[0], edge[1]] = PHEROMONE_DEPOSIT / route_distance # update pheromone by inverse distance and deposit
+        pheromone_update[edge[1], edge[0]] = pheromone_update[edge[0], edge[1]] = PHEROMONE_DEPOSIT / route_distance # update pheromone by inverse distance and deposit
 
     return pheromone_update
 
-def update_pheromone_matrix(pheromone_matrix, routes):
-    pheromone_matrix *= (1 - EVAPORATION_RATE) # pheromone evaporation
+def update_pheromone_matrix(distance_matrix, pheromone_matrix, ant_routes):
+    pheromone_matrix *= (1 - EVAPORATION_RATE) # pheromone evaporation to soft forget previous routes
 
-    for route in routes:
-        route_distance = get_route_distance(pheromone_matrix, route)
-        pheromone_update = get_pheromone_update(pheromone_matrix, route, route_distance) # get pheromone update for a single ant route
+    for route in ant_routes:
+        route_distance = get_route_distance(distance_matrix, route)
+        pheromone_update = get_pheromone_update(pheromone_matrix, route, route_distance)
         pheromone_matrix += pheromone_update # add each ant route contributions to pheromone matrix
 
     return pheromone_matrix
+
+def get_best_route(distance_matrix, ant_routes):
+    best_route = ant_routes[0]
+    best_route_distance = get_route_distance(distance_matrix, ant_routes[0]) # get route distance for the 1st route
+
+    for route in ant_routes:
+        route_distance = get_route_distance(distance_matrix, route)
+        if route_distance < best_route_distance:
+            best_route = route
+            best_route_distance = route_distance
+
+        # update best route if the current route is better
+
+    return best_route
 
 def construct_nearest_neighbor_solution(num_nodes, distance_matrix, start_node=0):
     pass
@@ -199,7 +214,7 @@ def main():
     print("Distance Matrix\n",distance_matrix,"\n")
     # Print initial Problem
 
-    pheromone_matrix = np.full(distance_matrix.shape, INITIAL_PHEROMONE_VALUE) # create pheromone matrix
+    pheromone_matrix = np.full(distance_matrix.shape, INITIAL_PHEROMONE_VALUE) # create pheromone matrix based on initial pheromone value
 
     fig = None
 
@@ -210,7 +225,8 @@ def main():
         fig.canvas.manager.set_window_title(f"Ant Colony TSP") # set window title
 
     G = create_networkX_graph(num_nodes, positions, distance_matrix) # create the precomputed graph object
-    best_route = create_random_route(num_nodes) # create a random route at the beginning
+    best_route = create_random_route(num_nodes) # create a random route
+    best_route_distance = get_route_distance(distance_matrix, best_route)
 
     if not ANIMATE_ROUTE:
         print("Animation Disabled...")
@@ -221,11 +237,25 @@ def main():
             if not plt.fignum_exists(fig.number):
                 continue_animation = False # disable animation and continue completing the algorithm
 
-        route = create_random_route(num_nodes) # random route for now. will change to ant colony later
+        ant_routes = np.zeros((NUMBER_OF_ANTS, num_nodes), dtype=int) # ant route matrix
+
+        for j in range(NUMBER_OF_ANTS):
+            ant_routes[j] = construct_random_ant_solution(pheromone_matrix, distance_matrix) # create random ant solution based on pheromones
+        
+        update_pheromone_matrix(distance_matrix, pheromone_matrix, ant_routes) # update pheromone matrix based on ant routes
+
+        current_iteration_best_route = get_best_route(distance_matrix, ant_routes) # get current iteration best route
+        current_iteration_best_route_distance = get_route_distance(distance_matrix, current_iteration_best_route)
+
+        if current_iteration_best_route_distance < best_route_distance:
+            best_route = current_iteration_best_route
+            best_route_distance = current_iteration_best_route_distance
+
+        # update best route if current best iteration route is better
 
         if ANIMATE_ROUTE and continue_animation and i % PLOT_EVERY_K_ITERATIONS == 0:
             ax.cla()
-            plot_route(ax, G, route, problem_name, num_nodes, distance_matrix, i, best_found=False) # plot the current route
+            plot_route(ax, G, current_iteration_best_route, problem_name, num_nodes, distance_matrix, i, best_found=False) # plot the current route
 
             fig.canvas.draw()
             fig.canvas.flush_events()
