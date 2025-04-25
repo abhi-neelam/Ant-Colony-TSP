@@ -75,16 +75,8 @@ def create_tsp_instance(problem):
     return problem_name, num_nodes, positions, distance_matrix
 
 def get_edge_list(route):
-    route_edges = []
-    num_nodes = len(route)
-
-    for i in range(num_nodes):
-        u = route[(i + 0) % num_nodes]
-        v = route[(i + 1) % num_nodes]
-        # handle wrap around by using mod
-
-        route_edges.append((u, v)) # append each edge to the list
-
+    shifted_route = np.roll(route, -1) # shift the route to get the next node in the route
+    route_edges = np.column_stack((route, shifted_route)) # stack the route and shifted route to get the edge list
     return route_edges
 
 def get_route_distance(distance_matrix, route):
@@ -116,7 +108,7 @@ def create_networkX_graph(num_nodes, positions, distance_matrix):
 
     return G
 
-def plot_route(ax, G, route, total_distance, problem_name, num_nodes, distance_matrix, current_iteration, best_found=False):
+def plot_route(ax, G, route, total_distance, problem_name, num_nodes, current_iteration, best_found=False):
     route_edges = get_edge_list(route)
     pos = nx.get_node_attributes(G, 'pos') # position dictionary for networkX
 
@@ -146,7 +138,7 @@ def get_desirability_matrix(distance_matrix):
     np.fill_diagonal(desirability_matrix, 0) # set diagonal to 0 since we can't go to the same node as we started from
     return desirability_matrix
 
-def construct_ant_solution(total_influence_matrix):
+def construct_ant_solution(total_influence_matrix, identity_route_permutation):
     num_nodes = total_influence_matrix.shape[0]
     
     unvisited_nodes = np.ones(num_nodes, dtype=bool)
@@ -160,7 +152,7 @@ def construct_ant_solution(total_influence_matrix):
         unvisited_influences = total_influence_matrix[current_node] * unvisited_nodes # get influences for unvisited nodes
         unvisited_probabilities = unvisited_influences / np.sum(unvisited_influences) # normalize to get probabilities
 
-        picked_node = np.random.choice(np.arange(num_nodes), p=unvisited_probabilities) # sample random node based on probability distribution
+        picked_node = np.random.choice(identity_route_permutation, p=unvisited_probabilities) # sample random node based on probability distribution
         
         route[i+1] = picked_node # add the node to the route
         unvisited_nodes[picked_node] = False # mark the node as picked
@@ -191,6 +183,7 @@ def main():
     problem = load_dataset()
     print_problem(problem)
     problem_name, num_nodes, positions, distance_matrix = create_tsp_instance(problem)
+    identity_route_permutation = np.arange(num_nodes) # used for caching purposes
     pheromone_matrix = np.full(distance_matrix.shape, INITIAL_PHEROMONE_VALUE) # create pheromone matrix based on initial pheromone value
     desirability_matrix = get_desirability_matrix(distance_matrix) # create desirability matrix based on distance matrix
     distance_influenced_matrix = desirability_matrix ** DISTANCE_INFLUENCE # influence for distance matrix
@@ -226,7 +219,7 @@ def main():
         total_influence_matrix = distance_influenced_matrix * pheromone_influenced_matrix # get total influence by multiplying
 
         for j in range(NUMBER_OF_ANTS):
-            ant_routes[j] = construct_ant_solution(total_influence_matrix)
+            ant_routes[j] = construct_ant_solution(total_influence_matrix, identity_route_permutation)
             route_distances[j] = get_route_distance(distance_matrix, ant_routes[j])
 
         update_pheromone_matrix(pheromone_matrix, ant_routes, route_distances)
@@ -236,10 +229,11 @@ def main():
             best_route = current_iteration_best_route.copy() # copy it to avoid reference issues
             best_route_distance = current_iteration_best_route_distance
         # update best route if current best iteration route is better
-
+        
+        # TODO - only plot the best route every k iterations
         if ANIMATE_ROUTE and continue_animation and i % PLOT_EVERY_K_ITERATIONS == 0:
             ax.cla()
-            plot_route(ax, G, best_route, best_route_distance, problem_name, num_nodes, distance_matrix, i, best_found=False) # plot the current route
+            plot_route(ax, G, current_iteration_best_route, current_iteration_best_route_distance, problem_name, num_nodes, i, best_found=False) # plot the current route
 
             fig.canvas.draw()
             fig.canvas.flush_events()
@@ -256,11 +250,11 @@ def main():
 
     np.set_printoptions(threshold=np.inf) # for showing the tour
 
-    print("\nBest Route Distance:", best_route_distance)
+    print("Best Route Distance:", best_route_distance)
     print("Best Route:", best_route)
 
     print("\nPlotting Best Route...")
-    plot_route(ax, G, best_route, best_route_distance, problem_name, num_nodes, distance_matrix, MAX_ITERATIONS, best_found=True) # plot final route solution
+    plot_route(ax, G, best_route, best_route_distance, problem_name, num_nodes, MAX_ITERATIONS, best_found=True) # plot final route solution
     plt.show() # show optimal route
 
     print("Exiting program...")
