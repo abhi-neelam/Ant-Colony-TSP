@@ -6,7 +6,7 @@ import numpy as np
 import mercantile
 
 PROBLEM_SIZE = "SMALL" # "SMALL", "MEDIUM", "LARGE"
-MAX_ITERATIONS = 1000 # number of iterations for the algorithm
+MAX_ITERATIONS = 10000 # number of iterations for the algorithm
 NUMBER_OF_ANTS = 5 # number of ants in the colony
 INITIAL_PHEROMONE_VALUE = 1.0 # initial pheromone value for each edge
 DISTANCE_INFLUENCE = 4.0 # influence of distance on route
@@ -159,10 +159,15 @@ def update_pheromone_matrix(pheromone_matrix, ant_routes, route_distances):
     for route, dist in zip(ant_routes, route_distances):
         route_edges = get_edge_list(route)
 
-        for edge in route_edges:
-            pheromone_matrix[edge[0], edge[1]] += PHEROMONE_DEPOSIT / (dist + EPSILON)
-            pheromone_matrix[edge[1], edge[0]] += PHEROMONE_DEPOSIT / (dist + EPSILON)
-            # update pheromone by inverse distance and default deposit
+        pheromone_delta = PHEROMONE_DEPOSIT / (dist + EPSILON) # how much to update pheromone
+
+        r1_nodes = route_edges[:, 0]
+        r2_nodes = route_edges[:, 1]
+        # caching for vectorization
+
+        pheromone_matrix[r1_nodes, r2_nodes] += pheromone_delta
+        pheromone_matrix[r2_nodes, r1_nodes] += pheromone_delta
+        # update all edges in pheromone matrix simultaneously
 
 def get_best_route_and_distance(ant_routes, route_distances):
     idx = np.argmin(route_distances)
