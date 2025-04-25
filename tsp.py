@@ -16,7 +16,7 @@ PHEROMONE_DEPOSIT = 1.0 # pheromone deposit factor
 EVAPORATION_RATE = 0.3 # pheromone evaporation rate
 # ALGORITHM PARAMETERS
 
-PARALLELIZE = False # use parallelization for ant route construction. beneficial if number of ants is large
+PARALLELIZE = False # use parallelization for ant route construction. beneficial if number of ants is large otherwise set to False
 # OPTIONAL PARAMETERS
 
 ANIMATE_ROUTE = True
@@ -237,8 +237,7 @@ def main():
             best_route = current_iteration_best_route.copy() # copy it to avoid reference issues
             best_route_distance = current_iteration_best_route_distance
         # update best route if current best iteration route is better
-        
-        # TODO - only plot the best route every k iterations
+
         if ANIMATE_ROUTE and continue_animation and i % PLOT_EVERY_K_ITERATIONS == 0:
             ax.cla()
             plot_route(ax, G, current_iteration_best_route, current_iteration_best_route_distance, problem_name, num_nodes, i, best_found=False) # plot the current route
