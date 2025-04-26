@@ -18,6 +18,7 @@ EVAPORATION_RATE = 0.2 # pheromone evaporation rate
 PARALLELIZE = False # use parallelization for ant route construction. beneficial if number of ants is large otherwise set to False
 # OPTIONAL PARAMETERS
 
+COLOR_PHEROMONE_EDGES = True
 ANIMATE_ROUTE = True
 PLOT_EVERY_K_ITERATIONS = 10
 ENABLE_NODE_LABELS = True
@@ -87,6 +88,11 @@ def get_route_distance(distance_matrix, route):
 def create_random_route(num_nodes):
     return np.random.permutation(num_nodes) # random permutation of the nodes
 
+def get_upper_triangular_list(mat):
+    n = mat.shape[0]
+    up_indices = np.triu_indices(n) # get the upper triangular indices of the matrix
+    return mat[up_indices] # return the values at those indices as a numpy array
+
 def create_networkX_graph(num_nodes, positions, distance_matrix):
     G = nx.Graph() # create the graph object
 
@@ -95,27 +101,29 @@ def create_networkX_graph(num_nodes, positions, distance_matrix):
 
     for i in range(0, num_nodes):
         for j in range(0, num_nodes):
-            if i == j:
-                continue # skip same node
             G.add_edge(i, j, weight=distance_matrix[i, j]) # add each edge between all pairs of nodes
 
     return G
 
-def plot_route(ax, G, route, total_distance, problem_name, num_nodes, current_iteration, best_found=False):
+def plot_route(ax, G, pheromone_matrix, route, total_distance, problem_name, num_nodes, current_iteration, best_found=False, force_draw_edges=False):
     route_edges = get_edge_list(route)
     pos = nx.get_node_attributes(G, 'pos') # position dictionary for networkX
 
-    is_node_labels_enabled =  ENABLE_NODE_LABELS and num_nodes <= NODE_LABELS_THRESHOLD
+    is_node_labels_enabled = ENABLE_NODE_LABELS and num_nodes <= NODE_LABELS_THRESHOLD
+    is_all_edges_enabled = num_nodes <= ALL_EDGES_THRESHOLD or force_draw_edges
     node_size = NODE_LABELS_NODE_SIZE if is_node_labels_enabled else NO_NODE_LABELS_NODE_SIZE
-    nx.draw_networkx_nodes(G,pos,node_size=node_size,node_color='lightcoral') # nodes
+
+    nx.draw_networkx_nodes(G, pos, node_size=node_size, node_color='lightcoral') # nodes
 
     if is_node_labels_enabled:
         nx.draw_networkx_labels(G, pos, font_size=8, font_weight='bold') # node labels
 
-    if num_nodes <= ALL_EDGES_THRESHOLD:
-        nx.draw_networkx_edges(G, pos, edge_color='gray', alpha=0.2) # all edges
+    pheromone_up_list = get_upper_triangular_list(pheromone_matrix) # get the upper triangular list of pheromone matrix
 
-    nx.draw_networkx_edges(G,pos,edgelist=route_edges,edge_color='black',width=1.5) # route edges
+    if is_all_edges_enabled:
+        nx.draw_networkx_edges(G, pos, alpha=1.0,edgelist=G.edges(), style='solid', width=2.0, edge_color=pheromone_up_list, edge_cmap=plt.cm.binary, edge_vmin=pheromone_up_list.min(), edge_vmax=pheromone_up_list.max()) # all edges
+
+    nx.draw_networkx_edges(G, pos, edgelist=route_edges, edge_color='black', width=1.5, arrows=True, arrowstyle='-|>') # route edges
     nx.draw_networkx_nodes(G, pos, nodelist=[route[0]], node_size=400, node_color='limegreen') # highlight starting node in the route
 
     ax.tick_params(axis='both', which='major', left=True, bottom=True, labelleft=True, labelbottom=True) # enable tick marks for both axes
@@ -236,7 +244,7 @@ def main():
 
         if ANIMATE_ROUTE and continue_animation and i % PLOT_EVERY_K_ITERATIONS == 0:
             ax.cla()
-            plot_route(ax, G, current_iteration_best_route, current_iteration_best_route_distance, problem_name, num_nodes, i, best_found=False) # plot the current route
+            plot_route(ax, G, pheromone_matrix, current_iteration_best_route, current_iteration_best_route_distance, problem_name, num_nodes, i, best_found=False) # plot the current route
 
             fig.canvas.draw()
             fig.canvas.flush_events()
@@ -257,7 +265,7 @@ def main():
     print("Best Route:", best_route)
 
     print("\nPlotting Best Route...")
-    plot_route(ax, G, best_route, best_route_distance, problem_name, num_nodes, MAX_ITERATIONS, best_found=True) # plot final route solution
+    plot_route(ax, G, pheromone_matrix, best_route, best_route_distance, problem_name, num_nodes, MAX_ITERATIONS, best_found=True, force_draw_edges=True) # plot final route solution
     plt.show() # show optimal route
 
     print("Exiting program...")
