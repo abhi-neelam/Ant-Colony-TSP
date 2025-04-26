@@ -5,7 +5,7 @@ from tqdm import tqdm
 import numpy as np
 from joblib import Parallel, delayed
 
-PROBLEM_SIZE = "SMALL" # "SMALL", "MEDIUM", "LARGE"
+PROBLEM_SIZE = "MEDIUM" # "SMALL", "MEDIUM", "LARGE"
 MAX_ITERATIONS = 1000 # number of iterations for the algorithm
 NUMBER_OF_ANTS = 25 # number of ants in the colony
 INITIAL_PHEROMONE_VALUE = 1.0 # initial pheromone value for each edge
@@ -101,11 +101,22 @@ def create_networkX_graph(num_nodes, positions, distance_matrix):
 
     for i in range(0, num_nodes):
         for j in range(0, num_nodes):
+            if i == j:
+                continue # skip self loops
             G.add_edge(i, j, weight=distance_matrix[i, j]) # add each edge between all pairs of nodes
 
     return G
 
+def order_by_pheromone_values(pheromone_up_list, edgelist):
+    indices = np.argsort(pheromone_up_list)
+
+    pheromone_up_list = pheromone_up_list[indices] # sort the pheromone values
+    edgelist = edgelist[indices] # sort the edges as well
+
+    return edgelist, pheromone_up_list
+
 def plot_route(ax, G, pheromone_matrix, route, total_distance, problem_name, num_nodes, current_iteration, best_found=False, force_draw_edges=False):
+    graph_edge_list = np.array(G.edges())
     route_edges = get_edge_list(route)
     pos = nx.get_node_attributes(G, 'pos') # position dictionary for networkX
 
@@ -118,10 +129,12 @@ def plot_route(ax, G, pheromone_matrix, route, total_distance, problem_name, num
     if is_node_labels_enabled:
         nx.draw_networkx_labels(G, pos, font_size=8, font_weight='bold') # node labels
 
-    pheromone_up_list = get_upper_triangular_list(pheromone_matrix) # get the upper triangular list of pheromone matrix
+    pheromone_up_list = pheromone_matrix[graph_edge_list[:,0], graph_edge_list[:,1]] # upper triangular pheromone values without diagonal
+    sorted_edgelist, sorted_pheromone_up_list = order_by_pheromone_values(pheromone_up_list, graph_edge_list) # sort the pheromone values and edges based on increasing pheromone values for drawing
+    # ordering is crucial for not drawing lower pheromone values on top of higher pheromone values!!!
 
     if is_all_edges_enabled:
-        nx.draw_networkx_edges(G, pos, alpha=1.0,edgelist=G.edges(), style='solid', width=2.0, edge_color=pheromone_up_list, edge_cmap=plt.cm.binary, edge_vmin=pheromone_up_list.min(), edge_vmax=pheromone_up_list.max()) # all edges
+        nx.draw_networkx_edges(G, pos, edgelist=sorted_edgelist, width=2.0, edge_color=sorted_pheromone_up_list, edge_cmap=plt.cm.Greens, edge_vmin=sorted_pheromone_up_list.min(), edge_vmax=sorted_pheromone_up_list.max()) # draw all edges based on pheromone values
 
     nx.draw_networkx_edges(G, pos, edgelist=route_edges, edge_color='black', width=1.5, arrows=True, arrowstyle='-|>') # route edges
     nx.draw_networkx_nodes(G, pos, nodelist=[route[0]], node_size=400, node_color='limegreen') # highlight starting node in the route
