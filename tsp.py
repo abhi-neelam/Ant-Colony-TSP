@@ -16,6 +16,7 @@ PHEROMONE_DEPOSIT = 1.0 # pheromone deposit factor
 EVAPORATION_RATE = 0.2 # pheromone evaporation rate
 # ALGORITHM PARAMETERS
 
+DISABLE_PLOTS = True # disable all plots for benchmarking
 PARALLELIZE = False # use parallelization for ant route construction. beneficial if number of ants is large otherwise set to False
 # OPTIONAL PARAMETERS
 
@@ -266,7 +267,7 @@ def main():
 
     fig = None
 
-    if ANIMATE_ROUTE:
+    if ANIMATE_ROUTE and not DISABLE_PLOTS:
         print("Animating route...")
         plt.ion() # enable interactive mode
         fig, ax = plt.subplots(figsize=(16, 9)) # create plot for animation
@@ -275,6 +276,9 @@ def main():
     G = create_networkX_graph(num_nodes, positions, distance_matrix) # create the precomputed graph object
     best_route = create_random_route(num_nodes) # create a random route
     best_route_distance = get_route_distance(distance_matrix, best_route)
+
+    if DISABLE_PLOTS:
+        print("Plots Disabled...")
 
     if not ANIMATE_ROUTE:
         print("Animation Disabled...")
@@ -319,9 +323,6 @@ def main():
     plt.close(fig) # close animated figure
     plt.ioff() # disable interactive mode
 
-    fig, ax = plt.subplots(figsize=(16, 9))
-    fig.canvas.manager.set_window_title(f"Ant System TSP") # set window title
-
     np.set_printoptions(threshold=np.inf) # for showing the tour
 
     as_distance = best_route_distance * scaled_distance
@@ -331,8 +332,11 @@ def main():
     time_taken_aco_ms = (end_time_aco - start_time_aco) * 1000 # report time taken in milliseconds
     print(f"Ant System Total Time Taken: {time_taken_aco_ms:.2f} ms")
 
-    plot_ant_tsp_route(ax, G, pheromone_matrix, best_route, best_route_distance * scaled_distance, problem_name, num_nodes, MAX_ITERATIONS, best_found=True, force_draw_edges=True) # plot final route solution
-    plt.show() # show optimal route
+    if not DISABLE_PLOTS:
+        fig, ax = plt.subplots(figsize=(16, 9))
+        fig.canvas.manager.set_window_title(f"Ant System TSP") # set window title
+        plot_ant_tsp_route(ax, G, pheromone_matrix, best_route, best_route_distance * scaled_distance, problem_name, num_nodes, MAX_ITERATIONS, best_found=True, force_draw_edges=True) # plot final route solution
+        plt.show() # show optimal route
 
     print("")
     start_time_nn = time.perf_counter()
@@ -348,10 +352,12 @@ def main():
     print(f"Nearest Neighbor Total Time Taken: {time_taken_nn_ms:.2f} ms")
 
     print("")
-    fig2, ax2 = plt.subplots(figsize=(16, 9))
-    fig2.canvas.manager.set_window_title(f"Nearest Neighbor TSP")
-    plot_nearest_neighbour_route(ax2, G, nearest_neighbor_route, nearest_neighbor_distance * scaled_distance, problem_name, num_nodes, force_draw_edges=False) # unscale the distance to get the real distance
-    plt.show()
+
+    if not DISABLE_PLOTS:
+        fig2, ax2 = plt.subplots(figsize=(16, 9))
+        fig2.canvas.manager.set_window_title(f"Nearest Neighbor TSP")
+        plot_nearest_neighbour_route(ax2, G, nearest_neighbor_route, nearest_neighbor_distance * scaled_distance, problem_name, num_nodes, force_draw_edges=False) # unscale the distance to get the real distance
+        plt.show()
 
     print("Summary Comparison")
 
