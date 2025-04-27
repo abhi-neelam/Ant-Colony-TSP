@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import numpy as np
 from joblib import Parallel, delayed
+import time
 
 PROBLEM_SIZE = "LARGE" # "SMALL", "MEDIUM", "LARGE"
 MAX_ITERATIONS = 400 # number of iterations for the algorithm
@@ -15,10 +16,10 @@ PHEROMONE_DEPOSIT = 1.0 # pheromone deposit factor
 EVAPORATION_RATE = 0.2 # pheromone evaporation rate
 # ALGORITHM PARAMETERS
 
-PARALLELIZE = True # use parallelization for ant route construction. beneficial if number of ants is large otherwise set to False
+PARALLELIZE = False # use parallelization for ant route construction. beneficial if number of ants is large otherwise set to False
 # OPTIONAL PARAMETERS
 
-ANIMATE_ROUTE = True
+ANIMATE_ROUTE = False # WARNING: Don't animate when benchmarking since timer will be affected
 PLOT_EVERY_K_ITERATIONS = 10
 ENABLE_NODE_LABELS = True
 NODE_LABELS_THRESHOLD = 100
@@ -279,6 +280,7 @@ def main():
         print("Animation Disabled...")
     print("")
 
+    start_time_aco = time.perf_counter()
     continue_animation = True
     for i in tqdm(range(MAX_ITERATIONS), desc=f"Running Ant System", unit="iter"):
         if fig is not None:
@@ -312,6 +314,7 @@ def main():
             fig.canvas.draw()
             fig.canvas.flush_events()
             plt.pause(0.1) # short pause for viewing the window
+    end_time_aco = time.perf_counter()
 
     plt.close(fig) # close animated figure
     plt.ioff() # disable interactive mode
@@ -321,18 +324,28 @@ def main():
 
     np.set_printoptions(threshold=np.inf) # for showing the tour
 
-    print("Ant System Best Route Distance:", best_route_distance * scaled_distance) # unscale the distance to get the real distance
+    as_distance = best_route_distance * scaled_distance
+    print(f"Ant System Best Route Distance: {as_distance:.2f}") # unscale the distance to get the real distance
     print("Ant System Best Route:", best_route)
+
+    time_taken_aco_ms = (end_time_aco - start_time_aco) * 1000 # report time taken in milliseconds
+    print(f"Ant System Total Time Taken: {time_taken_aco_ms:.2f} ms")
 
     plot_ant_tsp_route(ax, G, pheromone_matrix, best_route, best_route_distance * scaled_distance, problem_name, num_nodes, MAX_ITERATIONS, best_found=True, force_draw_edges=True) # plot final route solution
     plt.show() # show optimal route
 
     print("")
+    start_time_nn = time.perf_counter()
     nearest_neighbor_route = construct_nearest_neighbor_solution(distance_matrix, start_node)
-    nearest_neighbor_distance = get_route_distance(distance_matrix, nearest_neighbor_route)  
+    end_time_nn = time.perf_counter()
+    nearest_neighbor_distance = get_route_distance(distance_matrix, nearest_neighbor_route)
 
-    print("Nearest Neighbor Route Distance:", nearest_neighbor_distance * scaled_distance)
+    nn_distance = nearest_neighbor_distance * scaled_distance
+    print(f"Nearest Neighbor Route Distance: {nn_distance:.2f}") # unscale the distance to get the real distance
     print("Nearest Neighbor Route:", nearest_neighbor_route)
+
+    time_taken_nn_ms = (end_time_nn - start_time_nn) * 1000 # report time taken in milliseconds
+    print(f"Nearest Neighbor Total Time Taken: {time_taken_nn_ms:.2f} ms")
 
     print("")
     fig2, ax2 = plt.subplots(figsize=(16, 9))
@@ -341,10 +354,16 @@ def main():
     plt.show()
 
     print("Summary Comparison")
-    print(f"Ant System Best Distance: {best_route_distance * scaled_distance}")
-    print(f"Nearest Neighbor Distance: {nearest_neighbor_distance * scaled_distance}")
-    print(f"Difference: {nearest_neighbor_distance * scaled_distance - best_route_distance * scaled_distance}")
+
+    dist_diff = nearest_neighbor_distance * scaled_distance - best_route_distance * scaled_distance
+    print(f"Distance Difference: {dist_diff:.2f}")
     # unscale the stabilized distances to get the real distances
+
+    time_difference_s = (time_taken_aco_ms - time_taken_nn_ms) / 1000.0
+    print(f"Time Difference: {time_difference_s:.2f} sec")
+
+    improvement_percent = ((nearest_neighbor_distance - best_route_distance) / nearest_neighbor_distance) * 100 # percent increase formula
+    print(f"Improvement Percent: {improvement_percent:.2f}%")
 
     print("\nExiting program...")
 
