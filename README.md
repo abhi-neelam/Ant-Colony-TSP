@@ -18,6 +18,6 @@ https://docs.google.com/document/d/1twVNaK5_q31XbwoThMIa0YHA--2a9FYVu20sFOQsW4o/
     -   Use [Github Desktop](https://desktop.github.com/download/) to clone the [repo](https://github.com/LoneCoder21/Ant-Colony-TSP)
     -   Use terminal to run `git clone https://github.com/LoneCoder21/Ant-Colony-TSP`
 
-6.  Now install libraries with `pip install -r requirements.txt`
+6.  Now install libraries with `pip install --no-deps -r requirements.txt`
 
 7.  Launch the program with `python tsp.py`
