@@ -16,11 +16,11 @@ PHEROMONE_DEPOSIT = 1.0 # pheromone deposit factor
 EVAPORATION_RATE = 0.2 # pheromone evaporation rate
 # ALGORITHM PARAMETERS
 
-DISABLE_PLOTS = True # disable all plots for benchmarking
 PARALLELIZE = False # use parallelization for ant route construction. beneficial if number of ants is large otherwise set to False
 # OPTIONAL PARAMETERS
 
-ANIMATE_ROUTE = False # WARNING: Don't animate when benchmarking since timer will be affected
+DISABLE_PLOTS = True # disable all plots for benchmarking
+ANIMATE_ROUTE = False
 PLOT_EVERY_K_ITERATIONS = 10
 ENABLE_NODE_LABELS = True
 NODE_LABELS_THRESHOLD = 100
@@ -244,6 +244,17 @@ def construct_nearest_neighbor_solution(distance_matrix, start_node):
 
     return np.array(route)
 
+def print_ant_system_details():
+    print("Ant System Parameters")
+    print(f"Number of Ants: {NUMBER_OF_ANTS}")
+    print(f"Max Iterations: {MAX_ITERATIONS}")
+    print(f"Initial Pheromone Value: {INITIAL_PHEROMONE_VALUE}")
+    print(f"Distance Influence: {DISTANCE_INFLUENCE}")
+    print(f"Pheromone Influence: {PHEROMONE_INFLUENCE}")
+    print(f"Pheromone Deposit: {PHEROMONE_DEPOSIT}")
+    print(f"Evaporation Rate: {EVAPORATION_RATE}")
+    print("")
+
 def main():
     np.set_printoptions(threshold=20) # shorten size since positions array is big
 
@@ -283,6 +294,8 @@ def main():
     if not ANIMATE_ROUTE:
         print("Animation Disabled...")
     print("")
+
+    print_ant_system_details()
 
     start_time_aco = time.perf_counter()
     continue_animation = True
