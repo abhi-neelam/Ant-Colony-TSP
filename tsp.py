@@ -197,8 +197,20 @@ def get_best_route_and_distance(ant_routes, route_distances):
     idx = np.argmin(route_distances)
     return ant_routes[idx], route_distances[idx]
 
-def construct_nearest_neighbor_solution(num_nodes, distance_matrix, start_node=0):
-    pass
+def construct_nearest_neighbor_solution(num_nodes, distance_matrix, start_node=0):  
+    unvisited = set(range(num_nodes))
+    route = [start_node]
+    unvisited.remove(start_node)
+    current_node = start_node
+
+    while unvisited:
+        next_node = min(unvisited, key=lambda node: distance_matrix[current_node, node])
+        route.append(next_node)
+        unvisited.remove(next_node)
+        current_node = next_node
+
+    return np.array(route)
+
 
 def main():
     np.set_printoptions(threshold=20) # shorten size since positions array is big
@@ -284,6 +296,25 @@ def main():
     print("\nPlotting Best Route...")
     plot_route(ax, G, pheromone_matrix, best_route, best_route_distance, problem_name, num_nodes, MAX_ITERATIONS, best_found=True, force_draw_edges=True) # plot final route solution
     plt.show() # show optimal route
+
+     # --------- ADD NEAREST NEIGHBOR PART HERE ---------
+    print("\nCalculating Nearest Neighbor Solution...")
+    nearest_neighbor_route = construct_nearest_neighbor_solution(num_nodes, distance_matrix, start_node=0)
+    nearest_neighbor_distance = get_route_distance(distance_matrix, nearest_neighbor_route)
+
+    print("Nearest Neighbor Route Distance:", nearest_neighbor_distance)
+    print("Nearest Neighbor Route:", nearest_neighbor_route)
+
+    print("\nPlotting Nearest Neighbor Route...")
+    fig2, ax2 = plt.subplots(figsize=(16, 9))
+    fig2.canvas.manager.set_window_title(f"Nearest Neighbor TSP")
+    plot_route(ax2, G, pheromone_matrix, nearest_neighbor_route, nearest_neighbor_distance, problem_name, num_nodes, MAX_ITERATIONS, best_found=True, force_draw_edges=True)
+    plt.show()
+
+    print("\n--- Summary Comparison ---")
+    print(f"Ant Colony Best Distance: {best_route_distance:.2f}")
+    print(f"Nearest Neighbor Distance: {nearest_neighbor_distance:.2f}")
+    print(f"Difference: {nearest_neighbor_distance - best_route_distance:.2f}")
 
     print("Exiting program...")
 
