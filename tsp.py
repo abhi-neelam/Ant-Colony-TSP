@@ -7,7 +7,7 @@ from joblib import Parallel, delayed
 
 PROBLEM_SIZE = "LARGE" # "SMALL", "MEDIUM", "LARGE"
 MAX_ITERATIONS = 400 # number of iterations for the algorithm
-NUMBER_OF_ANTS = 25 # number of ants in the colony
+NUMBER_OF_ANTS = 25 # number of ants in the System
 INITIAL_PHEROMONE_VALUE = 1.0 # initial pheromone value for each edge
 DISTANCE_INFLUENCE = 2.0 # influence of distance on route
 PHEROMONE_INFLUENCE = 1.0 # influence of pheromone on route
@@ -18,7 +18,7 @@ EVAPORATION_RATE = 0.2 # pheromone evaporation rate
 PARALLELIZE = True # use parallelization for ant route construction. beneficial if number of ants is large otherwise set to False
 # OPTIONAL PARAMETERS
 
-ANIMATE_ROUTE = False
+ANIMATE_ROUTE = True
 PLOT_EVERY_K_ITERATIONS = 10
 ENABLE_NODE_LABELS = True
 NODE_LABELS_THRESHOLD = 100
@@ -71,7 +71,7 @@ def create_tsp_instance(problem):
 def max_normalize(matrix):
     max_val = np.max(matrix)
     normalized_mat = matrix / (max_val + EPSILON) # normalize the matrix by dividing by max value in the matrix
-    return normalized_mat
+    return normalized_mat, max_val # also return max_val to unscale to real distances later
 
 def get_edge_list(route):
     shifted_route = np.roll(route, -1) # shift the route to get the next node in the route
@@ -144,7 +144,7 @@ def plot_ant_tsp_route(ax, G, pheromone_matrix, route, total_distance, problem_n
 
     ax.tick_params(axis='both', which='major', left=True, bottom=True, labelleft=True, labelbottom=True) # enable tick marks for both axes
 
-    plt.title(f"{best_found*"Best"} Ant Colony TSP Route - {problem_name} ({num_nodes} nodes) \n{NUMBER_OF_ANTS} ants, {MAX_ITERATIONS} iterations, Current Iteration - {current_iteration}\nDistance Power - {DISTANCE_INFLUENCE}, Pheromone Power - {PHEROMONE_INFLUENCE}, Evaporation Rate - {EVAPORATION_RATE}\nDistance - {total_distance:.2f}", fontsize=14)
+    plt.title(f"{best_found*"Best"} Ant System TSP Route - {problem_name} ({num_nodes} nodes) \n{NUMBER_OF_ANTS} ants, {MAX_ITERATIONS} iterations, Current Iteration - {current_iteration}\nDistance Power - {DISTANCE_INFLUENCE}, Pheromone Power - {PHEROMONE_INFLUENCE}, Evaporation Rate - {EVAPORATION_RATE}\nDistance - {total_distance:.2f}", fontsize=14)
 
     plt.xlabel("Relative X Coord", fontsize=12)
     plt.ylabel("Relative Y Coord", fontsize=12) # plot labels
@@ -248,7 +248,8 @@ def main():
     problem = load_dataset()
     print_problem(problem)
     problem_name, num_nodes, positions, distance_matrix = create_tsp_instance(problem)
-    distance_matrix = max_normalize(distance_matrix) # normalize the distance matrix for stability
+    original_distance_matrix = distance_matrix.copy() # keep original distance matrix for display
+    distance_matrix, scaled_distance = max_normalize(distance_matrix) # normalize the distance matrix for stability
     identity_route_permutation = np.arange(num_nodes) # used for caching purposes
     pheromone_matrix = np.full(distance_matrix.shape, INITIAL_PHEROMONE_VALUE) # create pheromone matrix based on initial pheromone value
     desirability_matrix = get_desirability_matrix(distance_matrix) # create desirability matrix based on distance matrix
@@ -259,7 +260,7 @@ def main():
     start_node = np.random.randint(0, num_nodes) # random starting node to compare both algorithms
 
     print("2D Coordinates\n",positions,"\n")
-    print("Distance Matrix\n",distance_matrix,"\n")
+    print("Distance Matrix\n",original_distance_matrix,"\n")
     # Print initial Problem
 
     fig = None
@@ -268,7 +269,7 @@ def main():
         print("Animating route...")
         plt.ion() # enable interactive mode
         fig, ax = plt.subplots(figsize=(16, 9)) # create plot for animation
-        fig.canvas.manager.set_window_title(f"Ant Colony TSP") # set window title
+        fig.canvas.manager.set_window_title(f"Ant System TSP") # set window title
 
     G = create_networkX_graph(num_nodes, positions, distance_matrix) # create the precomputed graph object
     best_route = create_random_route(num_nodes) # create a random route
@@ -279,7 +280,7 @@ def main():
     print("")
 
     continue_animation = True
-    for i in tqdm(range(MAX_ITERATIONS), desc=f"Running Ant Colony", unit="iter"):
+    for i in tqdm(range(MAX_ITERATIONS), desc=f"Running Ant System", unit="iter"):
         if fig is not None:
             if not plt.fignum_exists(fig.number):
                 continue_animation = False # disable animation and continue completing the algorithm
@@ -306,46 +307,44 @@ def main():
 
         if ANIMATE_ROUTE and continue_animation and i % PLOT_EVERY_K_ITERATIONS == 0:
             ax.cla()
-            plot_ant_tsp_route(ax, G, pheromone_matrix, best_route, best_route_distance, problem_name, num_nodes, i, best_found=False) # plot the current route
+            plot_ant_tsp_route(ax, G, pheromone_matrix, best_route, best_route_distance * scaled_distance, problem_name, num_nodes, i, best_found=False) # plot the current route
 
             fig.canvas.draw()
             fig.canvas.flush_events()
             plt.pause(0.1) # short pause for viewing the window
 
-    if ANIMATE_ROUTE:
-        print("Animation finished...\n")
-
     plt.close(fig) # close animated figure
     plt.ioff() # disable interactive mode
 
     fig, ax = plt.subplots(figsize=(16, 9))
-    fig.canvas.manager.set_window_title(f"Ant Colony TSP") # set window title
+    fig.canvas.manager.set_window_title(f"Ant System TSP") # set window title
 
     np.set_printoptions(threshold=np.inf) # for showing the tour
 
-    print("Best Route Distance:", best_route_distance)
-    print("Best Route:", best_route)
+    print("Ant System Best Route Distance:", best_route_distance * scaled_distance) # unscale the distance to get the real distance
+    print("Ant System Best Route:", best_route)
 
-    plot_ant_tsp_route(ax, G, pheromone_matrix, best_route, best_route_distance, problem_name, num_nodes, MAX_ITERATIONS, best_found=True, force_draw_edges=True) # plot final route solution
+    plot_ant_tsp_route(ax, G, pheromone_matrix, best_route, best_route_distance * scaled_distance, problem_name, num_nodes, MAX_ITERATIONS, best_found=True, force_draw_edges=True) # plot final route solution
     plt.show() # show optimal route
 
     print("")
     nearest_neighbor_route = construct_nearest_neighbor_solution(distance_matrix, start_node)
-    nearest_neighbor_distance = get_route_distance(distance_matrix, nearest_neighbor_route)
+    nearest_neighbor_distance = get_route_distance(distance_matrix, nearest_neighbor_route)  
 
-    print("Nearest Neighbor Route Distance:", nearest_neighbor_distance)
+    print("Nearest Neighbor Route Distance:", nearest_neighbor_distance * scaled_distance)
     print("Nearest Neighbor Route:", nearest_neighbor_route)
 
     print("")
     fig2, ax2 = plt.subplots(figsize=(16, 9))
     fig2.canvas.manager.set_window_title(f"Nearest Neighbor TSP")
-    plot_nearest_neighbour_route(ax2, G, nearest_neighbor_route, nearest_neighbor_distance, problem_name, num_nodes, force_draw_edges=False)
+    plot_nearest_neighbour_route(ax2, G, nearest_neighbor_route, nearest_neighbor_distance * scaled_distance, problem_name, num_nodes, force_draw_edges=False) # unscale the distance to get the real distance
     plt.show()
 
-    print("\nSummary Comparison")
-    print(f"Ant Colony Best Distance: {best_route_distance}")
-    print(f"Nearest Neighbor Distance: {nearest_neighbor_distance}")
-    print(f"Difference: {nearest_neighbor_distance - best_route_distance}")
+    print("Summary Comparison")
+    print(f"Ant System Best Distance: {best_route_distance * scaled_distance}")
+    print(f"Nearest Neighbor Distance: {nearest_neighbor_distance * scaled_distance}")
+    print(f"Difference: {nearest_neighbor_distance * scaled_distance - best_route_distance * scaled_distance}")
+    # unscale the stabilized distances to get the real distances
 
     print("\nExiting program...")
 
