@@ -5,8 +5,8 @@ from tqdm import tqdm
 import numpy as np
 from joblib import Parallel, delayed
 
-PROBLEM_SIZE = "MEDIUM" # "SMALL", "MEDIUM", "LARGE"
-MAX_ITERATIONS = 100 # number of iterations for the algorithm
+PROBLEM_SIZE = "LARGE" # "SMALL", "MEDIUM", "LARGE"
+MAX_ITERATIONS = 400 # number of iterations for the algorithm
 NUMBER_OF_ANTS = 25 # number of ants in the colony
 INITIAL_PHEROMONE_VALUE = 1.0 # initial pheromone value for each edge
 DISTANCE_INFLUENCE = 2.0 # influence of distance on route
@@ -15,10 +15,9 @@ PHEROMONE_DEPOSIT = 1.0 # pheromone deposit factor
 EVAPORATION_RATE = 0.2 # pheromone evaporation rate
 # ALGORITHM PARAMETERS
 
-PARALLELIZE = False # use parallelization for ant route construction. beneficial if number of ants is large otherwise set to False
+PARALLELIZE = True # use parallelization for ant route construction. beneficial if number of ants is large otherwise set to False
 # OPTIONAL PARAMETERS
 
-COLOR_PHEROMONE_EDGES = True
 ANIMATE_ROUTE = False
 PLOT_EVERY_K_ITERATIONS = 10
 ENABLE_NODE_LABELS = True
@@ -183,12 +182,12 @@ def get_desirability_matrix(distance_matrix):
     np.fill_diagonal(desirability_matrix, 0) # set diagonal to 0 since we can't go to the same node as we started from
     return desirability_matrix
 
-def construct_ant_solution(total_influence_matrix, identity_route_permutation):
+def construct_ant_solution(total_influence_matrix, identity_route_permutation, start_node):
     num_nodes = total_influence_matrix.shape[0]
     
     unvisited_nodes = np.ones(num_nodes, dtype=bool)
     route = np.full(num_nodes, -1, dtype=int)
-    route[0] = np.random.randint(0, num_nodes) # select a random start node for the ant
+    route[0] = start_node
     unvisited_nodes[route[0]] = False # mark the start node as visited
 
     for i in range(num_nodes-1):
@@ -224,9 +223,8 @@ def get_best_route_and_distance(ant_routes, route_distances):
     idx = np.argmin(route_distances)
     return ant_routes[idx], route_distances[idx]
 
-def construct_nearest_neighbor_solution(distance_matrix):
+def construct_nearest_neighbor_solution(distance_matrix, start_node):
     num_nodes = distance_matrix.shape[0]
-    start_node = np.random.randint(0, num_nodes) # random starting node
     unvisited = set(range(num_nodes))
     route = [start_node]
     unvisited.remove(start_node) # remove starting node from unvisited set as it's now visited
@@ -258,6 +256,8 @@ def main():
     ant_routes = np.zeros((NUMBER_OF_ANTS, num_nodes), dtype=int) # ant route matrix
     route_distances = np.zeros(NUMBER_OF_ANTS) # route distances array
 
+    start_node = np.random.randint(0, num_nodes) # random starting node to compare both algorithms
+
     print("2D Coordinates\n",positions,"\n")
     print("Distance Matrix\n",distance_matrix,"\n")
     # Print initial Problem
@@ -288,10 +288,10 @@ def main():
         total_influence_matrix = distance_influenced_matrix * pheromone_influenced_matrix # get total influence by multiplying
 
         if PARALLELIZE:
-            ant_routes = Parallel(n_jobs=-1)(delayed(construct_ant_solution)(total_influence_matrix, identity_route_permutation) for j in range(NUMBER_OF_ANTS)) # parallelize ant route construction with with all cpu cores
+            ant_routes = Parallel(n_jobs=-1)(delayed(construct_ant_solution)(total_influence_matrix, identity_route_permutation, start_node) for j in range(NUMBER_OF_ANTS)) # parallelize ant route construction with with all cpu cores
         else:
             for j in range(NUMBER_OF_ANTS):
-                ant_routes[j] = construct_ant_solution(total_influence_matrix, identity_route_permutation) # manually construct ant routes without parallelization. better for smaller number of ants
+                ant_routes[j] = construct_ant_solution(total_influence_matrix, identity_route_permutation, start_node) # manually construct ant routes without parallelization. better for smaller number of ants
 
         for j in range(NUMBER_OF_ANTS):
             route_distances[j] = get_route_distance(distance_matrix, ant_routes[j]) # don't parallelize this since it's fast enough
@@ -330,13 +330,13 @@ def main():
     plt.show() # show optimal route
 
     print("")
-    nearest_neighbor_route = construct_nearest_neighbor_solution(distance_matrix)
+    nearest_neighbor_route = construct_nearest_neighbor_solution(distance_matrix, start_node)
     nearest_neighbor_distance = get_route_distance(distance_matrix, nearest_neighbor_route)
 
     print("Nearest Neighbor Route Distance:", nearest_neighbor_distance)
     print("Nearest Neighbor Route:", nearest_neighbor_route)
 
-    print("\nPlotting Nearest Neighbor Route...")
+    print("")
     fig2, ax2 = plt.subplots(figsize=(16, 9))
     fig2.canvas.manager.set_window_title(f"Nearest Neighbor TSP")
     plot_nearest_neighbour_route(ax2, G, nearest_neighbor_route, nearest_neighbor_distance, problem_name, num_nodes, force_draw_edges=False)
