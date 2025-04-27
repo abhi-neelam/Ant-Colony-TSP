@@ -6,7 +6,7 @@ import numpy as np
 from joblib import Parallel, delayed
 
 PROBLEM_SIZE = "MEDIUM" # "SMALL", "MEDIUM", "LARGE"
-MAX_ITERATIONS = 500 # number of iterations for the algorithm
+MAX_ITERATIONS = 100 # number of iterations for the algorithm
 NUMBER_OF_ANTS = 25 # number of ants in the colony
 INITIAL_PHEROMONE_VALUE = 1.0 # initial pheromone value for each edge
 DISTANCE_INFLUENCE = 2.0 # influence of distance on route
@@ -115,7 +115,7 @@ def order_by_pheromone_values(pheromone_up_list, edgelist):
 
     return edgelist, pheromone_up_list
 
-def plot_route(ax, G, pheromone_matrix, route, total_distance, problem_name, num_nodes, current_iteration, best_found=False, force_draw_edges=False):
+def plot_ant_tsp_route(ax, G, pheromone_matrix, route, total_distance, problem_name, num_nodes, current_iteration, best_found=False, force_draw_edges=False):
     graph_edge_list = np.array(G.edges())
     route_edges = get_edge_list(route)
     pos = nx.get_node_attributes(G, 'pos') # position dictionary for networkX
@@ -146,6 +146,33 @@ def plot_route(ax, G, pheromone_matrix, route, total_distance, problem_name, num
     ax.tick_params(axis='both', which='major', left=True, bottom=True, labelleft=True, labelbottom=True) # enable tick marks for both axes
 
     plt.title(f"{best_found*"Best"} Ant Colony TSP Route - {problem_name} ({num_nodes} nodes) \n{NUMBER_OF_ANTS} ants, {MAX_ITERATIONS} iterations, Current Iteration - {current_iteration}\nDistance Power - {DISTANCE_INFLUENCE}, Pheromone Power - {PHEROMONE_INFLUENCE}, Evaporation Rate - {EVAPORATION_RATE}\nDistance - {total_distance:.2f}", fontsize=14)
+
+    plt.xlabel("Relative X Coord", fontsize=12)
+    plt.ylabel("Relative Y Coord", fontsize=12) # plot labels
+    plt.grid(True, linestyle='-', alpha=0.8) # add grid
+
+def plot_nearest_neighbour_route(ax, G, route, total_distance, problem_name, num_nodes, force_draw_edges=False):
+    route_edges = get_edge_list(route)
+    pos = nx.get_node_attributes(G, 'pos') # position dictionary for networkX
+
+    is_node_labels_enabled = ENABLE_NODE_LABELS and num_nodes <= NODE_LABELS_THRESHOLD
+    is_all_edges_enabled = num_nodes <= ALL_EDGES_THRESHOLD or force_draw_edges
+    node_size = NODE_LABELS_NODE_SIZE if is_node_labels_enabled else NO_NODE_LABELS_NODE_SIZE
+
+    nx.draw_networkx_nodes(G, pos, node_size=node_size, node_color='lightcoral') # nodes
+
+    if is_node_labels_enabled:
+        nx.draw_networkx_labels(G, pos, font_size=8, font_weight='bold') # node labels
+
+    if is_all_edges_enabled:
+        nx.draw_networkx_edges(G, pos, edge_color='gray', alpha=0.1) # all edges
+
+    nx.draw_networkx_edges(G,pos,edgelist=route_edges,edge_color='black',width=2.0,arrows=True, arrowstyle='-|>') # route edges
+    nx.draw_networkx_nodes(G, pos, nodelist=[route[0]], node_size=400, node_color='limegreen') # highlight starting node in the route
+
+    ax.tick_params(axis='both', which='major', left=True, bottom=True, labelleft=True, labelbottom=True) # enable tick marks for both axes
+
+    plt.title(f"Nearest Neighbour TSP Route - {problem_name} ({num_nodes} nodes) \nDistance - {total_distance:.2f}", fontsize=14)
 
     plt.xlabel("Relative X Coord", fontsize=12)
     plt.ylabel("Relative Y Coord", fontsize=12) # plot labels
@@ -197,20 +224,25 @@ def get_best_route_and_distance(ant_routes, route_distances):
     idx = np.argmin(route_distances)
     return ant_routes[idx], route_distances[idx]
 
-def construct_nearest_neighbor_solution(num_nodes, distance_matrix, start_node=0):  
+def construct_nearest_neighbor_solution(distance_matrix):
+    num_nodes = distance_matrix.shape[0]
+    start_node = np.random.randint(0, num_nodes) # random starting node
     unvisited = set(range(num_nodes))
     route = [start_node]
-    unvisited.remove(start_node)
+    unvisited.remove(start_node) # remove starting node from unvisited set as it's now visited
     current_node = start_node
 
-    while unvisited:
-        next_node = min(unvisited, key=lambda node: distance_matrix[current_node, node])
-        route.append(next_node)
-        unvisited.remove(next_node)
-        current_node = next_node
+    with tqdm(total=num_nodes, desc="Running Nearest Neighbour") as pbar:
+        pbar.update(1)
+        while unvisited:
+            next_node = min(unvisited, key=lambda node: distance_matrix[current_node, node]) # choose the nearest unvisited node
+            route.append(next_node)
+            unvisited.remove(next_node)
+            current_node = next_node 
+            # update the route to include the next node
+            pbar.update(1)
 
     return np.array(route)
-
 
 def main():
     np.set_printoptions(threshold=20) # shorten size since positions array is big
@@ -244,6 +276,7 @@ def main():
 
     if not ANIMATE_ROUTE:
         print("Animation Disabled...")
+    print("")
 
     continue_animation = True
     for i in tqdm(range(MAX_ITERATIONS), desc=f"Running Ant Colony", unit="iter"):
@@ -273,7 +306,7 @@ def main():
 
         if ANIMATE_ROUTE and continue_animation and i % PLOT_EVERY_K_ITERATIONS == 0:
             ax.cla()
-            plot_route(ax, G, pheromone_matrix, best_route, best_route_distance, problem_name, num_nodes, i, best_found=False) # plot the current route
+            plot_ant_tsp_route(ax, G, pheromone_matrix, best_route, best_route_distance, problem_name, num_nodes, i, best_found=False) # plot the current route
 
             fig.canvas.draw()
             fig.canvas.flush_events()
@@ -293,13 +326,11 @@ def main():
     print("Best Route Distance:", best_route_distance)
     print("Best Route:", best_route)
 
-    print("\nPlotting Best Route...")
-    plot_route(ax, G, pheromone_matrix, best_route, best_route_distance, problem_name, num_nodes, MAX_ITERATIONS, best_found=True, force_draw_edges=True) # plot final route solution
+    plot_ant_tsp_route(ax, G, pheromone_matrix, best_route, best_route_distance, problem_name, num_nodes, MAX_ITERATIONS, best_found=True, force_draw_edges=True) # plot final route solution
     plt.show() # show optimal route
 
-     # --------- ADD NEAREST NEIGHBOR PART HERE ---------
-    print("\nCalculating Nearest Neighbor Solution...")
-    nearest_neighbor_route = construct_nearest_neighbor_solution(num_nodes, distance_matrix, start_node=0)
+    print("")
+    nearest_neighbor_route = construct_nearest_neighbor_solution(distance_matrix)
     nearest_neighbor_distance = get_route_distance(distance_matrix, nearest_neighbor_route)
 
     print("Nearest Neighbor Route Distance:", nearest_neighbor_distance)
@@ -308,14 +339,14 @@ def main():
     print("\nPlotting Nearest Neighbor Route...")
     fig2, ax2 = plt.subplots(figsize=(16, 9))
     fig2.canvas.manager.set_window_title(f"Nearest Neighbor TSP")
-    plot_route(ax2, G, pheromone_matrix, nearest_neighbor_route, nearest_neighbor_distance, problem_name, num_nodes, MAX_ITERATIONS, best_found=True, force_draw_edges=True)
+    plot_nearest_neighbour_route(ax2, G, nearest_neighbor_route, nearest_neighbor_distance, problem_name, num_nodes, force_draw_edges=False)
     plt.show()
 
-    print("\n--- Summary Comparison ---")
-    print(f"Ant Colony Best Distance: {best_route_distance:.2f}")
-    print(f"Nearest Neighbor Distance: {nearest_neighbor_distance:.2f}")
-    print(f"Difference: {nearest_neighbor_distance - best_route_distance:.2f}")
+    print("\nSummary Comparison")
+    print(f"Ant Colony Best Distance: {best_route_distance}")
+    print(f"Nearest Neighbor Distance: {nearest_neighbor_distance}")
+    print(f"Difference: {nearest_neighbor_distance - best_route_distance}")
 
-    print("Exiting program...")
+    print("\nExiting program...")
 
 main() # launch the program
