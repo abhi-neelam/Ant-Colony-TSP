@@ -381,7 +381,7 @@ def main():
     time_difference_s = (time_taken_aco_ms - time_taken_nn_ms) / 1000.0
     print(f"Time Difference: {time_difference_s:.2f} sec")
 
-    improvement_percent = ((nearest_neighbor_distance - best_route_distance) / nearest_neighbor_distance) * 100 # percent increase formula
+    improvement_percent = ((nearest_neighbor_distance * scaled_distance - best_route_distance * scaled_distance) / (nearest_neighbor_distance * scaled_distance)) * 100 # percent increase formula between the two algorithms
     print(f"Improvement Percent: {improvement_percent:.2f}%")
 
     print("\nExiting program...")
