@@ -6,7 +6,7 @@ import numpy as np
 from joblib import Parallel, delayed
 import time
 
-PROBLEM_SIZE = "LARGE" # "SMALL", "MEDIUM", "LARGE"
+PROBLEM_SIZE = "MEDIUM" # "SMALL", "MEDIUM", "LARGE"
 MAX_ITERATIONS = 400 # number of iterations for the algorithm
 NUMBER_OF_ANTS = 25 # number of ants in the System
 INITIAL_PHEROMONE_VALUE = 1.0 # initial pheromone value for each edge
@@ -19,8 +19,8 @@ EVAPORATION_RATE = 0.2 # pheromone evaporation rate
 PARALLELIZE = False # use parallelization for ant route construction. beneficial if number of ants is large otherwise set to False
 # OPTIONAL PARAMETERS
 
-DISABLE_PLOTS = True # disable all plots for benchmarking
-ANIMATE_ROUTE = False
+DISABLE_PLOTS = False # disable all plots for benchmarking
+ANIMATE_ROUTE = True
 PLOT_EVERY_K_ITERATIONS = 10
 ENABLE_NODE_LABELS = True
 NODE_LABELS_THRESHOLD = 100
