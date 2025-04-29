@@ -106,16 +106,16 @@ def get_best_route_and_distance(ant_routes, route_distances):
 
 def construct_ant_system_solution(MAX_ITERATIONS, NUMBER_OF_ANTS, INITIAL_PHEROMONE_VALUE, PHEROMONE_INFLUENCE, DISTANCE_INFLUENCE, PHEROMONE_DEPOSIT, EVAPORATION_RATE, PARALLELIZE, distance_matrix, start_node):
     num_nodes = distance_matrix.shape[0]
-    identity_route_permutation = np.arange(num_nodes)
-    desirability_matrix = get_desirability_matrix(distance_matrix)
-    distance_influenced_matrix = desirability_matrix ** DISTANCE_INFLUENCE # distance influence
+    identity_route_permutation = np.arange(num_nodes) # used for caching purposes
+    desirability_matrix = get_desirability_matrix(distance_matrix) # create desirability matrix based on distance matrix
+    distance_influenced_matrix = desirability_matrix ** DISTANCE_INFLUENCE # influence for distance matrix
 
-    pheromone_matrix = np.full(distance_matrix.shape, INITIAL_PHEROMONE_VALUE)
+    pheromone_matrix = np.full(distance_matrix.shape, INITIAL_PHEROMONE_VALUE) # create pheromone matrix based on initial pheromone value
     ant_routes = np.zeros((NUMBER_OF_ANTS, num_nodes), dtype=int) # initialize ant routes
-    route_distances = np.zeros(NUMBER_OF_ANTS)
+    route_distances = np.zeros(NUMBER_OF_ANTS) # route distances array
 
-    best_route = create_random_route(num_nodes)
-    best_route_distance = get_route_distance(distance_matrix, best_route) # start route and start distance
+    best_route = create_random_route(num_nodes) # create a random route
+    best_route_distance = get_route_distance(distance_matrix, best_route)
 
     for i in range(MAX_ITERATIONS):
         pheromone_influenced_matrix = pheromone_matrix ** PHEROMONE_INFLUENCE # influence for pheromone matrix
@@ -164,18 +164,7 @@ def sample_main(PROBLEM_SIZE, MAX_ITERATIONS, NUMBER_OF_ANTS, INITIAL_PHEROMONE_
 
     # start timer for Ant System Algorithm
     start_time_aco = time.perf_counter()
-    best_route_aco = construct_ant_system_solution(
-        MAX_ITERATIONS,
-        NUMBER_OF_ANTS,
-        INITIAL_PHEROMONE_VALUE,
-        PHEROMONE_INFLUENCE,
-        DISTANCE_INFLUENCE,
-        PHEROMONE_DEPOSIT,
-        EVAPORATION_RATE,
-        PARALLELIZE,
-        distance_matrix_scaled,
-        start_node
-    )
+    best_route_aco = construct_ant_system_solution(MAX_ITERATIONS, NUMBER_OF_ANTS, INITIAL_PHEROMONE_VALUE, PHEROMONE_INFLUENCE, DISTANCE_INFLUENCE, PHEROMONE_DEPOSIT, EVAPORATION_RATE, PARALLELIZE, distance_matrix_scaled, start_node)
     end_time_aco = time.perf_counter() # end timer for Ant System Algorithm
     time_taken_aco_ms = (end_time_aco - start_time_aco) * 1000 # calculate time taken in milliseconds
 
@@ -205,6 +194,4 @@ DISTANCE_INFLUENCE = 2.0 # influence of distance on route
 PHEROMONE_INFLUENCE = 1.0 # influence of pheromone on route
 PHEROMONE_DEPOSIT = 1.0 # pheromone deposit factor
 EVAPORATION_RATE = 0.2 # pheromone evaporation rate
-PARALLELIZE_FLAG = False # Set to True to attempt parallel execution if joblib is available
-
-# now call sample_main to sample the main function for both algorithms
+PARALLELIZE = False # use parallelization for ant route construction. beneficial if number of ants is large otherwise set to False
