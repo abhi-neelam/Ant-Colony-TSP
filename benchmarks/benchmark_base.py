@@ -163,13 +163,13 @@ def sample_main(PROBLEM_SIZE, MAX_ITERATIONS, NUMBER_OF_ANTS, INITIAL_PHEROMONE_
     start_node = np.random.randint(0, num_nodes) # choose random starting node for both algorithms
 
     # start timer for Ant System Algorithm
-    start_time_aco = time.perf_counter()
-    best_route_aco = construct_ant_system_solution(MAX_ITERATIONS, NUMBER_OF_ANTS, INITIAL_PHEROMONE_VALUE, PHEROMONE_INFLUENCE, DISTANCE_INFLUENCE, PHEROMONE_DEPOSIT, EVAPORATION_RATE, PARALLELIZE, distance_matrix_scaled, start_node)
-    end_time_aco = time.perf_counter() # end timer for Ant System Algorithm
-    time_taken_aco_ms = (end_time_aco - start_time_aco) * 1000 # calculate time taken in milliseconds
+    start_time_as = time.perf_counter()
+    best_route_as = construct_ant_system_solution(MAX_ITERATIONS, NUMBER_OF_ANTS, INITIAL_PHEROMONE_VALUE, PHEROMONE_INFLUENCE, DISTANCE_INFLUENCE, PHEROMONE_DEPOSIT, EVAPORATION_RATE, PARALLELIZE, distance_matrix_scaled, start_node)
+    end_time_as = time.perf_counter() # end timer for Ant System Algorithm
+    time_taken_as_ms = (end_time_as - start_time_as) * 1000 # calculate time taken in milliseconds
 
-    aco_distance_scaled = get_route_distance(distance_matrix_scaled, best_route_aco) # get scaled distance for Ant System Algorithm
-    as_distance = aco_distance_scaled * scaled_distance # unscale to get real distance
+    as_distance_scaled = get_route_distance(distance_matrix_scaled, best_route_as) # get scaled distance for Ant System Algorithm
+    as_distance = as_distance_scaled * scaled_distance # unscale to get real distance
 
     start_time_nn = time.perf_counter() # start timer for Nearest Neighbor Algorithm
     nearest_neighbor_route = construct_nearest_neighbor_solution(distance_matrix_scaled, start_node)
@@ -180,15 +180,15 @@ def sample_main(PROBLEM_SIZE, MAX_ITERATIONS, NUMBER_OF_ANTS, INITIAL_PHEROMONE_
     time_taken_nn_ms = (end_time_nn - start_time_nn) * 1000 # calculate time taken in milliseconds
 
     dist_diff = nn_distance - as_distance # get distance difference between the two algorithms
-    time_difference_s = (time_taken_aco_ms - time_taken_nn_ms) / 1000.0 # get time difference in seconds
+    time_difference_s = (time_taken_as_ms - time_taken_nn_ms) / 1000.0 # get time difference in seconds
 
     improvement_percent = ((nn_distance - as_distance) / nn_distance) * 100 # percent increase formula between the two algorithms
 
-    return as_distance, time_taken_aco_ms, nn_distance, time_taken_nn_ms, dist_diff, time_difference_s, improvement_percent
+    return as_distance, time_taken_as_ms, nn_distance, time_taken_nn_ms, dist_diff, time_difference_s, improvement_percent
 
 PROBLEM_SIZE = "LARGE" # "SMALL", "MEDIUM", "LARGE"
 MAX_ITERATIONS = 400 # number of iterations for the algorithm
-NUMBER_OF_ANTS = 25 # number of ants in the System
+NUMBER_OF_ANTS = 25 # number of ants in the system
 INITIAL_PHEROMONE_VALUE = 1.0 # initial pheromone value for each edge
 DISTANCE_INFLUENCE = 2.0 # influence of distance on route
 PHEROMONE_INFLUENCE = 1.0 # influence of pheromone on route

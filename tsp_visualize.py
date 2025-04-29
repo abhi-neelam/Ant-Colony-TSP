@@ -8,7 +8,7 @@ import time
 
 PROBLEM_SIZE = "MEDIUM" # "SMALL", "MEDIUM", "LARGE"
 MAX_ITERATIONS = 400 # number of iterations for the algorithm
-NUMBER_OF_ANTS = 25 # number of ants in the System
+NUMBER_OF_ANTS = 25 # number of ants in the system
 INITIAL_PHEROMONE_VALUE = 1.0 # initial pheromone value for each edge
 DISTANCE_INFLUENCE = 2.0 # influence of distance on route
 PHEROMONE_INFLUENCE = 1.0 # influence of pheromone on route
@@ -297,7 +297,7 @@ def main():
 
     print_ant_system_details()
 
-    start_time_aco = time.perf_counter()
+    start_time_as = time.perf_counter()
     continue_animation = True
     for i in tqdm(range(MAX_ITERATIONS), desc=f"Running Ant System", unit="iter"):
         if fig is not None:
@@ -331,7 +331,7 @@ def main():
             fig.canvas.draw()
             fig.canvas.flush_events()
             plt.pause(0.1) # short pause for viewing the window
-    end_time_aco = time.perf_counter()
+    end_time_as = time.perf_counter()
 
     plt.close(fig) # close animated figure
     plt.ioff() # disable interactive mode
@@ -342,8 +342,8 @@ def main():
     print(f"Ant System Best Route Distance: {as_distance:.2f}") # unscale the distance to get the real distance
     print("Ant System Best Route:", best_route)
 
-    time_taken_aco_ms = (end_time_aco - start_time_aco) * 1000 # report time taken in milliseconds
-    print(f"Ant System Total Time Taken: {time_taken_aco_ms:.2f} ms")
+    time_taken_as_ms = (end_time_as - start_time_as) * 1000 # report time taken in milliseconds
+    print(f"Ant System Total Time Taken: {time_taken_as_ms:.2f} ms")
 
     if not DISABLE_PLOTS:
         fig, ax = plt.subplots(figsize=(16, 9))
@@ -378,7 +378,7 @@ def main():
     print(f"Distance Difference: {dist_diff:.2f}")
     # unscale the stabilized distances to get the real distances
 
-    time_difference_s = (time_taken_aco_ms - time_taken_nn_ms) / 1000.0
+    time_difference_s = (time_taken_as_ms - time_taken_nn_ms) / 1000.0
     print(f"Time Difference: {time_difference_s:.2f} sec")
 
     improvement_percent = ((nearest_neighbor_distance * scaled_distance - best_route_distance * scaled_distance) / (nearest_neighbor_distance * scaled_distance)) * 100 # percent increase formula between the two algorithms
