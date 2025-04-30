@@ -5,10 +5,10 @@ import time
 
 def load_dataset(PROBLEM_SIZE):
     if PROBLEM_SIZE == "SMALL":
-        return tsplib95.load('datasets/ulysses22.tsp')
+        return tsplib95.load('../datasets/ulysses22.tsp')
     elif PROBLEM_SIZE == "MEDIUM":
-        return tsplib95.load('datasets/berlin52.tsp')
-    return tsplib95.load('datasets/lin105.tsp')
+        return tsplib95.load('../datasets/berlin52.tsp')
+    return tsplib95.load('../datasets/lin105.tsp')
 
 def create_tsp_instance(problem):
     problem_name = problem.name
