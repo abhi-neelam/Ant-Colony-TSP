@@ -50,14 +50,6 @@ def get_route_distance(distance_matrix, route):
 def create_random_route(num_nodes):
     return np.random.permutation(num_nodes) # random permutation of the nodes
 
-def order_by_pheromone_values(pheromone_up_list, edgelist):
-    indices = np.argsort(pheromone_up_list) # get indices as if they were sorted
-
-    pheromone_up_list = pheromone_up_list[indices] # sort the pheromone values
-    edgelist = edgelist[indices] # sort the edges as well
-
-    return edgelist, pheromone_up_list
-
 def get_desirability_matrix(distance_matrix, epsilon=1e-10):
     desirability_matrix = 1.0 / (distance_matrix + epsilon) # invert distance. higher distance means less desirability and vice versa
     np.fill_diagonal(desirability_matrix, 0) # set diagonal to 0 since we can't go to the same node as we started from
