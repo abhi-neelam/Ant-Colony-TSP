@@ -7,7 +7,7 @@ from joblib import Parallel, delayed
 import time
 
 PROBLEM_SIZE = "MEDIUM" # "SMALL", "MEDIUM", "LARGE"
-MAX_ITERATIONS = 400 # number of iterations for the algorithm
+MAX_ITERATIONS = 300 # number of iterations for the algorithm
 NUMBER_OF_ANTS = 25 # number of ants in the system
 INITIAL_PHEROMONE_VALUE = 1.0 # initial pheromone value for each edge
 DISTANCE_INFLUENCE = 2.0 # influence of distance on route
@@ -20,7 +20,7 @@ PARALLELIZE = False # use parallelization for ant route construction. beneficial
 # OPTIONAL PARAMETERS
 
 DISABLE_PLOTS = False # disable all plots for benchmarking
-ANIMATE_ROUTE = True
+ANIMATE_ROUTE = False
 PLOT_EVERY_K_ITERATIONS = 10
 ENABLE_NODE_LABELS = True
 NODE_LABELS_THRESHOLD = 100
