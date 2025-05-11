@@ -114,7 +114,7 @@ def construct_ant_system_solution(MAX_ITERATIONS, NUMBER_OF_ANTS, INITIAL_PHEROM
         total_influence_matrix = distance_influenced_matrix * pheromone_influenced_matrix # get total influence by multiplying
 
         if PARALLELIZE:
-            ant_routes = Parallel(n_jobs=-1)(delayed(construct_single_ant_solution)(total_influence_matrix, identity_route_permutation, start_node) for _ in range(NUMBER_OF_ANTS)) # parallelize ant route construction with with all cpu cores
+            ant_routes = Parallel(n_jobs=-1)(delayed(construct_single_ant_solution)(total_influence_matrix, identity_route_permutation, start_node) for _ in range(NUMBER_OF_ANTS)) # parallelize ant route construction with all cpu cores
         else:
             for j in range(NUMBER_OF_ANTS):
                 ant_routes[j] = construct_single_ant_solution(total_influence_matrix, identity_route_permutation, start_node) # manually construct ant routes without parallelization. better for smaller number of ants

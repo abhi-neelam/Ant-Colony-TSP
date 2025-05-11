@@ -7,7 +7,7 @@ from joblib import Parallel, delayed
 import time
 
 PROBLEM_SIZE = "MEDIUM" # "SMALL", "MEDIUM", "LARGE"
-MAX_ITERATIONS = 300 # number of iterations for the algorithm
+MAX_ITERATIONS = 100 # number of iterations for the algorithm
 NUMBER_OF_ANTS = 25 # number of ants in the system
 INITIAL_PHEROMONE_VALUE = 1.0 # initial pheromone value for each edge
 DISTANCE_INFLUENCE = 2.0 # influence of distance on route
@@ -308,7 +308,7 @@ def main():
         total_influence_matrix = distance_influenced_matrix * pheromone_influenced_matrix # get total influence by multiplying
 
         if PARALLELIZE:
-            ant_routes = Parallel(n_jobs=-1)(delayed(construct_ant_solution)(total_influence_matrix, identity_route_permutation, start_node) for j in range(NUMBER_OF_ANTS)) # parallelize ant route construction with with all cpu cores
+            ant_routes = Parallel(n_jobs=-1)(delayed(construct_ant_solution)(total_influence_matrix, identity_route_permutation, start_node) for j in range(NUMBER_OF_ANTS)) # parallelize ant route construction with all cpu cores
         else:
             for j in range(NUMBER_OF_ANTS):
                 ant_routes[j] = construct_ant_solution(total_influence_matrix, identity_route_permutation, start_node) # manually construct ant routes without parallelization. better for smaller number of ants
