@@ -20,4 +20,4 @@ https://docs.google.com/document/d/1twVNaK5_q31XbwoThMIa0YHA--2a9FYVu20sFOQsW4o/
 
 6.  Now install libraries with `pip install --no-deps -r requirements.txt`
 
-7.  Launch the program with `python tsp.py`
+7.  Launch the program with `python tsp_visualize.py`

@@ -20,8 +20,8 @@ PARALLELIZE = False # use parallelization for ant route construction. beneficial
 # OPTIONAL PARAMETERS
 
 DISABLE_PLOTS = False # disable all plots for benchmarking
-ANIMATE_ROUTE = False
-PLOT_EVERY_K_ITERATIONS = 10
+ANIMATE_ROUTE = True
+PLOT_EVERY_K_ITERATIONS = 1
 ENABLE_NODE_LABELS = True
 NODE_LABELS_THRESHOLD = 100
 ALL_EDGES_THRESHOLD = 100
