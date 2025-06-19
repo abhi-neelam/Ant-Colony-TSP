@@ -15,8 +15,8 @@ https://docs.google.com/document/d/1twVNaK5_q31XbwoThMIa0YHA--2a9FYVu20sFOQsW4o/
 4.  Login to GitHub account using a terminal or use [Github Desktop](https://desktop.github.com/download/)
 5.  Clone the repository
 
-    -   Use [Github Desktop](https://desktop.github.com/download/) to clone the [repo](https://github.com/LoneCoder21/Ant-Colony-TSP)
-    -   Use terminal to run `git clone https://github.com/LoneCoder21/Ant-Colony-TSP`
+    -   Use [Github Desktop](https://desktop.github.com/download/) to clone the [repo](https://github.com/abhi-neelam/Ant-Colony-TSP)
+    -   Use terminal to run `git clone https://github.com/abhi-neelam/Ant-Colony-TSP`
 
 6.  Now install libraries with `pip install --no-deps -r requirements.txt`
 
